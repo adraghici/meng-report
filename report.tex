@@ -71,7 +71,7 @@ Workflow management systems provide support for creating data processing pipelin
 
 \section{Motivation}
 
-Although multiple workflow management systems such as Taverna \cite{Taverna}, Kepler \cite{Kepler}, Pegasus \cite{Pegasus}, Galaxy \cite{Galaxy} or Apache Airavata \cite{Airavata} are already established, many of them focus on specific scientific areas. Since the bioinformatics community is particularly active in adopting the usage of scientific workflows, tools like Galaxy and Kepler have been historically tailored for the needs of researchers in this field.
+Although multiple workflow management systems such as Taverna \cite{Taverna}, Kepler \cite{Kepler}, Pegasus \cite{Pegasus} or Galaxy \cite{Galaxy} are already established, many of them focus on specific scientific areas. Since the bioinformatics community is particularly active in adopting the usage of scientific workflows, tools like Galaxy and Kepler have been historically tailored for the needs of researchers in this field.
 
 OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the natural parallelism of simulation algorithms and targets distributed computing environments to run them. Compared to other existing platforms, OpenMOLE exposes some key features that make it unique:
 
@@ -197,9 +197,15 @@ Three different modes are available for delegating computation to EC2:
 
 \subsection{Kepler}
 
-\subsection{Pegasus}
+Kepler \cite{Kepler} is one of the first general-purpose scientific workflow systems, recognising the need for transparent and simplified access to high performance computing platforms more than a decade ago. It also underlined concepts such as reusable and reproducible workflow runs, scalability of models, as well as fault tolerance and reliability in the context of remote execution \cite{Ludascher2006}.
 
-\subsection{Apache Airavata}
+The novelty of Kepler's design resides in the actor-oriented model. Actors are basic independent components representing either data sources or operations in the workflow. They are interconnected via channels and own receivers that handle their external communication, as well as input and output ports.
+
+However, the execution model differs from standard systems in that its flow is not directed by the topology of the network. Instead, a special component named \textit{director} establishes the order of execution for actors, selects the operations they perform and orchestrates their communication by controlling their respective receivers \cite{Curcin2008}. This means that actors are not necessarily executed sequentially and triggered by data received on incoming ports, which reveals possibilities for concurrency semantics and renders the model fit for embedded systems simulations.
+
+Although Kepler does not support execution on clusters in cloud environments out of the box, research groups using it have developed custom solutions to partially support this functionality. Wang and Altintas \cite{Wang2012} propose EC2 actors capable of managing Amazon virtual machines and suggest using StarCluster \cite{StarCluster} to build virtual clusters from the Kepler AMI they provide. This approach is sensible and can be used in conjunction with any other workflow systems, but is not readily available for Kepler at the moment.
+
+\subsection{Pegasus}
 
 
 \section{Cloud Infrastructure Tools}
