@@ -1,0 +1,241 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage{tabulary}
+\usepackage{amsthm}
+\usepackage{syntax}
+\usepackage{listings}
+\usepackage{lipsum}
+\usepackage{verbatim}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{breqn}
+\usepackage{caption}
+\usepackage{sectsty}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{cite}
+\usepackage[parfill]{parskip}
+\usepackage{paralist}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{wasysym}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{float}
+\usepackage{todonotes}
+\usepackage{chngcntr}
+\usepackage{enumitem}
+
+\sectionfont{\Large}
+
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{0.30cm}
+\setlist[itemize]{parsep=0.18cm}
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% \lstset{basicstyle=\ttfamily, showstringspaces=false, columns=flexible}
+
+\def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1}\item[]}
+\let\endchangemargin=\endlist
+
+\begin{document}
+\bibliographystyle{is-unsrt}
+\counterwithout{figure}{chapter}
+
+\hypersetup{allcolors=black}
+\tableofcontents
+\newpage
+
+\chapter{Introduction}
+
+Scientists have spent decades building intricate mathematical models for systems and phenomena observed in all areas of life sciences. Such models have greatly expanded our understanding of the complex systems they describe, but the dramatic developments in technology and increase in widely available computational power in recent years have exposed another direction in which current research methodologies can progress.
+
+Simulation in high performance computing environments is today the main approach used to validate scientific models in application domains ranging from astronomy to biomedical or earthquake science. Analytical solutions are often impossible to obtain, given the non-linear nature of these systems, so empirical observations drawn from running them in virtual settings is the only sensible option for further tuning and optimisation.
+
+The prevalence of hypotheses developed by centralising and mining vast arrays of data sources has led to an era of data-centric research \cite{Goble2009}, where powerful cluster, grid and cloud computing platforms are open for scientific usage. However, the expertise required to operate this infrastructure is beyond the skill set of most researchers, so the efficiency of experimentation and the quality of insights drawn from it are heavily influenced by the performance of tools available to manage and process the available data.
+
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.22]{figures/WorkflowExample.png}
+	\caption{Workflow example \cite{Curcin2008}}
+	\label{WorkflowExample}
+\end{figure}
+
+Workflow management systems provide support for creating data processing pipelines and automating historically tedious tasks such as tuning program parameters by running them repeatedly against many different datasets, defining work units and their interdependencies, or collecting and persisting results of analyses \cite{Goble2009, Taylor2007}. This is all achieved in the context of delegating the work efficiently over resources offered by distributed computing environments.
+
+\section{Motivation}
+
+Although multiple workflow management systems such as Taverna \cite{Taverna}, Kepler \cite{Kepler}, Pegasus \cite{Pegasus}, Galaxy \cite{Galaxy} or Apache Airavata \cite{Airavata} are already established, many of them focus on specific scientific areas. Since the bioinformatics community is particularly active in adopting the usage of scientific workflows, tools like Galaxy and Kepler have been historically tailored for the needs of researchers in this field.
+
+OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the natural parallelism of simulation algorithms and targets distributed computing environments to run them. Compared to other existing platforms, OpenMOLE exposes some key features that make it unique:
+
+\begin{itemize}
+	\item It is not intended for use within a single scientific community, allowing for generic formalisms that make it general purpose.
+	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and cluster provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
+	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It provides its own software packaging system, Yapa \cite{Yapa}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
+	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}.
+	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. These are reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
+\end{itemize}
+
+Options that OpenMOLE currently offers to run workflows include:
+
+\begin{itemize}
+	\item Multithreading on a local machine.
+	\item SSH connections to remote servers.
+	\item Grids, such as EGI \cite{EGI}.
+	\item Clusters managed by a wide range of software, including PBS \cite{PBS}, Torque \cite{Torque}, SGE \cite{SGE}, Slurm \cite{SLURM}, Condor \cite{Condor}, or OAR \cite{OAR}.
+\end{itemize}
+
+However, OpenMOLE does not support distributing the workload on cloud computing environments. at the moment. This is a significant disadvantage compared to other similar applications, since cloud providers are ubiquitous and cheap resources mean that a large user base could accelerate their research using OpenMOLE.
+
+\section{Objectives}
+
+The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{Amazon}, as well as on Imperial College's Department of Computing private CloudStack deployment.
+
+The key objectives of the project include:
+
+\begin{itemize}
+	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on both cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
+	\item Implementing a solution using the chosen tools as part of GridScale \cite{Passerat2016}, the engine powering OpenMOLE's distributed computation service. The library already has a modular structure, so development should be possible in isolation from the rest of the already production-ready modules.
+	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently and results are likely to be spurious, since they might be cause by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
+\end{itemize}
+
+
+\chapter{Background}
+
+This chapter gives an overview of the current state of the workflow engine ecosystem by looking at some of the existing platforms with a focus on their supported execution platforms and cloud deployments in particular. Next, we proceed to describe GridScale, the library used by OpenMOLE to access distributed computing resources and present some basic ideas to enhance it with support for a cloud infrastructure. This leads to the last section, where we investigate tools and frameworks that could allow scheduling of jobs on a cluster of instances provisioned from a cloud.
+
+\section{Grids and Cloud Computing}
+
+\todo[inline]{I was thinking of giving an overview of what the similarities and differences between grids and clouds are, as I was myself confused in the beginning - probably a short description of EC2 and CloudStack  and a writeup of something similar to these articles: http://www.cloud-lounge.org/clouds-and-grids-compared.html and http://www.ibm.com/developerworks/library/wa-cloudgrid/. Is it worth it?}
+
+\section{Workflow Platform Ecosystem}
+
+Chronologically, scientific workflow systems have emerged from the bioinformatics community along with the recent trend towards data-driven research. Their large number and segregation despite achieving similar purposes could be explained by many research groups independently trying to formalise, consolidate and generalise their workflows. Therefore, most systems achieve comparable goals, with slight variations. Standard features include \cite{Goble2009}:
+
+\begin{itemize}
+	\item Creation and definition of reusable tasks or work units. A task can represent anything from processing an image to running an expensive computation or invoking a service over the web.
+	\item A graphical user interface that simplifies the flow of tasks by allowing definitions via a simple visual representation. See Figure \ref{OpenMOLEGUI} for an example of this.
+	\item An execution platform that runs the workflow, hiding the complexity of calling service applications, managing and storing data, setting up and consuming remote computational resources, dealing with failures and logging results and unexpected behaviours. This is the engine of the application.
+	\item A collaboration platform, where users can interact and share workflows.
+\end{itemize}
+
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.30]{figures/OpenMOLEGUI.png}
+	\caption{OpenMOLE graphical workflow \cite{Reuillon2012}}
+	\label{OpenMOLEGUI}
+\end{figure}
+
+From the multitude of existing workflow systems, we have selected some of the most often referenced ones for closer inspection. Since our focus only spans the targeting of different remote execution platforms, we will generally omit the details of workflow definition and the underlying implementation, as well as the graphical design and collaboration factors. We are particularly interested in engines that support cloud environments and insights we can draw from their design and infrastructure.
+
+\subsection{Taverna}
+
+Taverna \cite{Wolstencroft2013} is one of the most popular workflow systems. It was initially created as a framework for bioinformatics research and has remained used primarily in this field despite efforts from contributors towards expansion to other research areas.
+
+The system has three main functional components:
+\begin{itemize}
+	\item Taverna Workbench is the standard suite including the user interface and execution platform. However, this package alone is quite restricted since it only supports running the workflow locally and not distributing it remotely.
+	\item Taverna Server is a suite that works on the principles of simple client-server interaction. A server instance stores workflow blueprints created by the community and the client is only allowed to trigger runs of the experiments via a web interface. In this model, only server administrators have permission to add workflow content, while regular users are not allowed to freely create and upload their own custom workflows to the server. Additionally, the need for a full installation and configuration of the server software in order to execute work remotely limits ease of deployment and creates an important entry barrier.
+	\item Taverna Player is the web interface used by the client to send requests to Taverna Server.
+\end{itemize}
+
+Despite its maturity, Taverna does not, on its own, have built-in support for automatic server installations on grids or clouds. Instead, users need to develop custom orchestration infrastructure for these environments to allow deploying clusters coordinated by the instance where Taverna Server is installed. Both caGrid \cite{caGrid} and BioVeL \cite{BioVeL} have implemented such solutions \cite{TavernaGrid, Giacinto} to take advantage of grid resources. On Amazon EC2, Taverna is only available as an Amazon Machine Image (AMI) runnable on a single instance, without support for clustering.
+
+\subsection{Galaxy}
+
+Galaxy \cite{Goecks2010} is another community specific web-based platforms for managing workflows, focussing on genomic research. Conceptually, it is driven by the motivation to ensure accessibility of computational resources by providing researchers with simple web interfaces to interact with distributed environments, reproducibility of experiments by tagging and recording order and intent of each action users take, as well as transparency of findings by consolidating a robust collaboration framework.
+
+CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from the an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage (EBS) can be explicitly turned on from the CloudMan Console.
+
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.40]{figures/CloudManConsole.png}
+	\caption{CloudMan cluster management console \cite{Afgan2010}}
+	\label{CloudManConsole}
+\end{figure}
+
+CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination.
+
+One major advantage of CloudMan is its modular architecture, under which instances only use a lightweight AMI and reference the tools they need from external storage such as EBS, as shown in Figure \ref{CloudManArch}. This grants further flexibility in terms of updating the system, because the AMI does not need to be repackaged too frequently and the state of machines can be modified by simply writing on persistent storage.
+
+\vspace{5mm}
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.35]{figures/CloudManArch.png}
+	\caption{CloudMan modular architecture \cite{Afgan2010}}
+	\label{CloudManArch}
+\end{figure}
+
+\subsection{Tavaxy}
+
+Tavaxy \cite{Abouelhoda2012} was created from the desire to ease the sharing of scientific workflows between the increasingly large user bases of Taverna and Galaxy within the bioinformatics community. The limited interoperability between the two systems was caused by differences in workflow description languages, as well as execution engines and overall design. Tavaxy consolidates Taverna and Galaxy workflows to run an be edited in a single environment, encouraging the community to create composite routines with building blocks from both worlds.
+
+Tavaxy focuses on efficiently and transparently delegating workload to grid and cloud platforms. It can run a cluster when it is provided with a distributed file system similar to NFS and a standard job scheduler like SGE. The preferred cloud platform is Amazon EC2 and provisioning extra resources is done via a simple web interface, operated similarly as for Taverna and Galaxy.
+
+Three different modes are available for delegating computation to EC2:
+
+\begin{itemize}
+	\item Whole system instantiation, where the user has no local version of Tavaxy installed and can bootstrap a new instance from a provided AMI. This will automatically create and configure a cluster that the user can control through a web console. Amazon S3 \cite{S3} is used for persistent storage of shared data in the cluster.
+	\item Sub-workflow execution, which presumes a local installation and Tavaxy used for workflow design and allows the user to create a cluster in the cloud from a more lightweight AMI wrapping the runtime environment. The local machine sends the workflows remotely for execution and waits for results of the run. The user has two options for transmitting the input data and persisting the results. The first option is to send Inputs along with the workflow definition to master node machine and save outputs manually to local storage, while alternative is to upload input data to S3 and configure the cluster to direct reads and writes there directly. The general architecture for this mode of operation can be observed in Figure \ref{TavaxyArch}.
+	\item Single task instantiation, which is similar to sub-workflow execution, except that only a task in the workflow is delegated to the cloud.
+\end{itemize}
+
+\vspace{5mm}
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.25]{figures/TavaxyArch.png}
+	\caption{Tavaxy interaction between a local machine and Amazon EC2 \cite{Abouelhoda2012}}
+	\label{TavaxyArch}
+\end{figure}
+
+\subsection{Kepler}
+
+\subsection{Pegasus}
+
+\subsection{Apache Airavata}
+
+
+\section{Cloud Infrastructure Tools}
+
+\subsection{Chronos}
+
+\subsection{Mesosphere}
+
+\subsection{CometCloud}
+
+\subsection{elasticluster}
+
+\subsection{SWF}
+
+\subsection{CfnCluster}
+
+\subsection{Starcluster}
+
+\chapter{Project Plan}
+\begin{itemize}
+	\item Minimum viable product
+	\item Exact implementation goals
+	\item Timeline
+\end{itemize}
+
+\chapter{Evaluation Plan}
+\begin{itemize}
+	\item Evaluation at each milestone
+	\item Benchmarks (against known workflow engines from bioinformatics / biomedical imaging world)
+	\item Comparisons with performance at start of project
+	\item Show ease of running on different environments
+	\item Evaluate
+\end{itemize}
+
+\listoftodos
+
+\bibliography{MEngProject}
+
+\end{document}
