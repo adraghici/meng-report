@@ -64,7 +64,7 @@ The prevalence of hypotheses developed by centralising and mining vast arrays of
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.22]{figures/WorkflowExample.png}
-	\caption{Workflow example \cite{Curcin2008}}
+	\caption{Workflow example \cite{Curcin2008}.}
 	\label{WorkflowExample}
 \end{figure}
 
@@ -90,14 +90,14 @@ Options that OpenMOLE currently offers to run workflows include:
 	\item Multithreading on a local machine.
 	\item SSH connections to remote servers.
 	\item Grids, such as EGI \cite{EGI}.
-	\item Clusters managed by a wide range of software, including PBS \cite{PBS}, Torque \cite{Torque}, SGE \cite{SGE}, Slurm \cite{SLURM}, Condor \cite{Condor}, or OAR \cite{OAR}.
+	\item Clusters managed by a wide range of software, including PBS \cite{PBS}, Torque \cite{Torque}, SGE \cite{SGE}, Slurm \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
 \end{itemize}
 
 However, OpenMOLE does not support distributing the workload on cloud computing environments. at the moment. This is a significant disadvantage compared to other similar applications, since cloud providers are ubiquitous and cheap resources mean that a large user base could accelerate their research using OpenMOLE.
 
 \section{Objectives}
 
-The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{Amazon}, as well as on Imperial College's Department of Computing private CloudStack deployment.
+The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{EC2}, as well as on Imperial College's Department of Computing private CloudStack deployment.
 
 The key objectives of the project include:
 
@@ -109,6 +109,8 @@ The key objectives of the project include:
 
 \todo[inline]{@Jonathan: We insist on not only allowing to run jobs in cloud environments, but actually allowing to run them on clusters in the cloud. Most other workflow systems do not really make a distinction at this level and they instead say they support EC2 if they have an AMI that allows running the job on an EC2 instance. However, I'm not sure why we necessarily need a cluster, since EC2 already has robust autoscaling features. Is it because we want to parallelise the execution of tasks and this can not be achieved by a machine being autoscaled to a larger capacity? Would it also be the case that an extra machine could not be used as effectively as when for example using instances as servers for client requests, since a long-running job filling up the capacity of an instance can not be simply split up midway through execution?}
 
+\todo[inline]{If the above is the case, useful references to automatic upscaling and downscaling depending on load can be found in "Scientific Workflow Applications on Amazon EC2" and the Pegasus papers - especially the 2016 one}.
+
 
 \chapter{Background}
 
@@ -118,9 +120,11 @@ This chapter gives an overview of the current state of the workflow engine ecosy
 
 \todo[inline]{@Jonathan: I was thinking of giving an overview of what the similarities and differences between grids and clouds are, as I was myself confused in the beginning - probably a short description of EC2 and CloudStack  and a writeup of something similar to these articles: http://www.cloud-lounge.org/clouds-and-grids-compared.html and http://www.ibm.com/developerworks/library/wa-cloudgrid/. Is it worth it?}
 
+\todo[inline]{Can use Pegasus papers for a nice comparison from the point of view of workflow management systems.}
+
 \section{Workflow Platform Ecosystem}
 
-Chronologically, scientific workflow systems have emerged from the bioinformatics community along with the recent trend towards data-driven research. Their large number and segregation despite achieving similar purposes could be explained by many research groups independently trying to formalise, consolidate and generalise their workflows. Therefore, most systems achieve comparable goals, with slight variations. Standard features include \cite{Goble2009}:
+Chronologically, scientific workflow systems have emerged from the bioinformatics community along with the recent trend towards data-driven research. Their large number and segregation despite achieving similar purposes could be explained by many research groups independently trying to formalise, consolidate and generalise their workflows. Therefore, most systems achieve comparable goals, with slight variations. Common features include \cite{Goble2009}:
 
 \begin{itemize}
 	\item Creation and definition of reusable tasks or work units. A task can represent anything from processing an image to running an expensive computation or invoking a service over the web.
@@ -132,7 +136,7 @@ Chronologically, scientific workflow systems have emerged from the bioinformatic
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.30]{figures/OpenMOLEGUI.png}
-	\caption{OpenMOLE graphical workflow \cite{Reuillon2012}}
+	\caption{OpenMOLE graphical workflow \cite{Reuillon2012}.}
 	\label{OpenMOLEGUI}
 \end{figure}
 
@@ -144,12 +148,12 @@ Taverna \cite{Wolstencroft2013} is one of the most popular workflow systems. It 
 
 The system has three main functional components:
 \begin{itemize}
-	\item Taverna Workbench is the standard suite including the user interface and execution platform. However, this package alone is quite restricted since it only supports running the workflow locally and not distributing it remotely.
-	\item Taverna Server is a suite that works on the principles of simple client-server interaction. A server instance stores workflow blueprints created by the community and the client is only allowed to trigger runs of the experiments via a web interface. In this model, only server administrators have permission to add workflow content, while regular users are not allowed to freely create and upload their own custom workflows to the server. Additionally, the need for a full installation and configuration of the server software in order to execute work remotely limits ease of deployment and creates an important entry barrier.
-	\item Taverna Player is the web interface used by the client to send requests to Taverna Server.
+	\item \textit{Taverna Workbench} is the standard suite including the user interface and execution platform. However, this package alone is quite restricted since it only supports running the workflow locally and not distributing it remotely.
+	\item \textit{Taverna Server} is a suite that works on the principles of simple client-server interaction. A server instance stores workflow blueprints created by the community and the client is only allowed to trigger runs of the experiments via a web interface. In this model, only server administrators have permission to add workflow content, while regular users are not allowed to freely create and upload their own custom workflows to the server. Additionally, the need for a full installation and configuration of the server software in order to execute work remotely limits ease of deployment and creates an important entry barrier.
+	\item \textit{Taverna Player} is the web interface used by the client to send requests to Taverna Server.
 \end{itemize}
 
-Despite its maturity, Taverna does not, on its own, have built-in support for automatic server installations on grids or clouds. Instead, users need to develop custom orchestration infrastructure for these environments to allow deploying clusters coordinated by the instance where Taverna Server is installed. Both caGrid \cite{caGrid} and BioVeL \cite{BioVeL} have implemented such solutions \cite{TavernaGrid, Giacinto} to take advantage of grid resources. On Amazon EC2, Taverna is only available as an Amazon Machine Image (AMI) runnable on a single instance, without support for clustering.
+Despite its maturity, Taverna does not, on its own, have built-in support for automatic server installations on grids or clouds. Instead, users need to develop custom orchestration infrastructure for these environments to allow deploying clusters coordinated by the instance where Taverna Server is installed. Both caGrid \cite{caGrid} and BioVeL \cite{BioVeL} have implemented such solutions \cite{TavernaGrid, Donvito} to take advantage of grid resources. On Amazon EC2, Taverna is only available as an Amazon Machine Image (AMI) runnable on a single instance, without support for clustering.
 
 \subsection{Galaxy}
 
@@ -160,7 +164,7 @@ CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy t
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.40]{figures/CloudManConsole.png}
-	\caption{CloudMan cluster management console \cite{Afgan2010}}
+	\caption{CloudMan cluster management console \cite{Afgan2010}.}
 	\label{CloudManConsole}
 \end{figure}
 
@@ -172,7 +176,7 @@ One major advantage of CloudMan is its modular architecture, under which instanc
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.35]{figures/CloudManArch.png}
-	\caption{CloudMan modular architecture \cite{Afgan2010}}
+	\caption{CloudMan modular architecture \cite{Afgan2010}.}
 	\label{CloudManArch}
 \end{figure}
 
@@ -185,16 +189,16 @@ Tavaxy focuses on efficiently and transparently delegating workload to grid and 
 Three different modes are available for delegating computation to EC2:
 
 \begin{itemize}
-	\item Whole system instantiation, where the user has no local version of Tavaxy installed and can bootstrap a new instance from a provided AMI. This will automatically create and configure a cluster that the user can control through a web console. Amazon S3 \cite{S3} is used for persistent storage of shared data in the cluster.
-	\item Sub-workflow execution, which presumes a local installation and Tavaxy used for workflow design and allows the user to create a cluster in the cloud from a more lightweight AMI wrapping the runtime environment. The local machine sends the workflows remotely for execution and waits for results of the run. The user has two options for transmitting the input data and persisting the results. The first option is to send Inputs along with the workflow definition to master node machine and save outputs manually to local storage, while alternative is to upload input data to S3 and configure the cluster to direct reads and writes there directly. The general architecture for this mode of operation can be observed in Figure \ref{TavaxyArch}.
-	\item Single task instantiation, which is similar to sub-workflow execution, except that only a task in the workflow is delegated to the cloud.
+	\item \textit{Whole system instantiation}, where the user has no local version of Tavaxy installed and can bootstrap a new instance from a provided AMI. This will automatically create and configure a cluster that the user can control through a web console. Amazon S3 \cite{S3} is used for persistent storage of shared data in the cluster.
+	\item \textit{Sub-workflow execution}, which presumes a local installation and Tavaxy used for workflow design and allows the user to create a cluster in the cloud from a more lightweight AMI wrapping the runtime environment. The local machine sends the workflows remotely for execution and waits for results of the run. The user has two options for transmitting the input data and persisting the results. The first option is to send Inputs along with the workflow definition to master node machine and save outputs manually to local storage, while alternative is to upload input data to S3 and configure the cluster to direct reads and writes there directly. The general architecture for this mode of operation can be observed in Figure \ref{TavaxyArch}.
+	\item \textit{Single task instantiation}, which is similar to sub-workflow execution, except that only a task in the workflow is delegated to the cloud.
 \end{itemize}
 
 \vspace{5mm}
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.25]{figures/TavaxyArch.png}
-	\caption{Tavaxy interaction between a local machine and Amazon EC2 \cite{Abouelhoda2012}}
+	\caption{Tavaxy interaction between a local machine and Amazon EC2 \cite{Abouelhoda2012}.}
 	\label{TavaxyArch}
 \end{figure}
 
@@ -210,7 +214,48 @@ Although Kepler does not support execution on clusters in cloud environments out
 
 \subsection{Pegasus}
 
-\section{Cloud Infrastructure Tools}
+Pegasus \cite{Pegasus} is a system that initially gained popularity for mapping complex workflows to resources resources in distributed environments without requiring input from the user \cite{Deelman2004}. Since its inception, many other similar applications have incorporated this feature, but Pegasus employs several optimisations that improve runtime performance and resource allocation.
+
+Pegasus makes a clear distinction between high-level workflows defined by users their actual executed form. Abstract workflows allow portability to many runtime platforms and free the user from explicitly indicating specific resources that should perform the work, while concrete workflows precisely bind execution stages to specific storage, computation, and network resources. This setup allows for multiple optimisations that would otherwise be impossible, particularly considering the fast dynamics of cloud and grid platforms. The latest release of application relies on four essential components \cite{Deelman2013, Deelman2016}:
+
+\begin{itemize}
+	\item The \textit{mapper} receives an abstract workflow as an input and produces a concrete workflow, defining the software and hardware requirements of the computation. Additionally, it performs metadata processing to enable data provenance tracking and modifies the structure of the workflow by grouping suitable tasks.
+	\item The \textit{workflow engine} ensures the execution in topological order. This responsibility is delegated to DAGMan \cite{DAGMan}, a meta-scheduler that runs on top of HTCondor \cite{HTCondor} and allows ready jobs to be run.
+	\item The HTCondor \textit{job scheduler} manages the queue of individual jobs. It supervises the execution and restarts task runs in the case of failures.
+	\item The \textit{workflow monitor} is a daemon that parses output logs and notifies the end-user on the status of the submission.
+\end{itemize}
+
+Pegasus performs most of its important optimisations at the mapping stage, since this is the point where the workflow is broken down into single tasks. The improvements with significant impact on performance concern the following aspects \cite{Deelman2016}
+
+\begin{itemize}
+	\item \textit{Data movement}. This refers to ensuring that data required by a job is collocated with resources where it is executed. For example, copying input data from a user's local server to EBS is highly preferred when running jobs on EC2 because Amazon guarantees low latency when accessing its own storage systems.
+	\item \textit{Data reuse}. Pegasus is able to reuse intermediate results of the workflow that have already been computed during previous runs of the workflow if the definitions of the tasks and input data have not changed. The process requires careful coordination with the \textit{data cleanup} phase in order to simultaneously leverage already known results and avoid wasting storage capacity.
+	\item \textit{Job clustering}. For many short-lived jobs, orchestrating the transfer of task results across machines in a cluster and long queueing times can incur high latency costs. Grouping related tasks into larger entities helps alleviate this problem by not only reducing load on the machine that hosts the job submission system, but also improving overall performance for workflows with large number of tasks by over 90\%, as previous studies have shown \cite{Deelman2010, Singh2008}. \textit{Level-based horizontal clustering} (Figure \ref{HorizontalClustering}) and \textit{label-based clustering} (Figure \ref{LabelClustering}) are some of the most effective strategies, although the latter requires users to explicitly label tasks when defining the workflow \cite{Deelman2013}.
+\end{itemize}
+	
+\vspace{5mm}
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.23]{figures/HorizontalClustering.png}
+	\caption{Level-based horizontal clustering targetting parallelisable tasks \cite{Deelman2013}.}
+	\label{HorizontalClustering}
+\end{figure}
+
+\vspace{6mm}
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.23]{figures/LabelClustering.png}
+	\caption{Label-based clustering \cite{Deelman2013}.}
+	\label{LabelClustering}
+\end{figure}
+
+Although all the optimisations and design ideas discussed above apply to all distributed execution platforms, earlier deployments of Pegasus have confirmed several advantages of cloud environments. These include on-demand provisioning of resources and ability to easily ensure consistency of software installed on all the machines in a fleet \cite{Deelman2016}. 
+
+However, further development of workflow management systems is needed in order to fully exploit cloud features such as automatic scaling of available resources. The main problem is that the load of instances occurs in the case of long-running jobs since upscaling usually leaves unused extra resources, while downscaling is even more challenging because long individual tasks can not be split up any further. Basic solutions involve only allowing automatic scaling on idle instances or when having many short-lived jobs, but this is definitely an area open to future work.
+
+Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software, meaning that the technical barrier for using the cloud is higher than for similar grid-based systems that are usually professionally managed.
+
+\section{Cluster Deployment on Clouds}
 
 \subsection{Chronos}
 
