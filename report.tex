@@ -79,10 +79,12 @@ OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the 
 \begin{itemize}
 	\item It is not intended for use within a single scientific community, allowing for generic formalisms that make it general purpose.
 	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and cluster provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
-	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It provides its own software packaging system, Yapa \cite{Yapa}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
+	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It integrates a standalone packaging system, CARE \cite{Janin.etal.2014}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
+	\todo[inline]{@Adrian: I've removed the reference to Yapa (now deprecated) and replaced with CARE, which is the underlying engine of Yapa anyway.}
 	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}.
 	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. These are reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
 \end{itemize}
+
 
 Options that OpenMOLE currently offers to run workflows include:
 
