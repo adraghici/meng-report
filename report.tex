@@ -102,10 +102,12 @@ However, OpenMOLE does not support distributing the workload on cloud computing 
 
 The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{EC2}, as well as on Imperial College's Department of Computing private CloudStack deployment.
 
+\todo[inline]{Change to something like "running jobs on Amazon EC2, while remaining generic enough to potentially target other cloud providers (Google Cloud, OpenStack, ...)}
+
 The key objectives of the project include:
 
 \begin{itemize}
-	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on both cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
+	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
 	\item Implementing a solution using the chosen tools as part of GridScale \cite{Passerat2016}, the engine powering OpenMOLE's distributed computation service. The library already has a modular structure, so development should be possible in isolation from the rest of the already production-ready modules.
 	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently. Results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
 \end{itemize}
