@@ -228,7 +228,7 @@ Although Kepler does not support execution on clusters in cloud environments out
 
 Pegasus \cite{Pegasus} is a system that initially gained popularity for mapping complex workflows to resources resources in distributed environments without requiring input from the user \cite{Deelman2004}. Since its inception, many other similar applications have incorporated this feature, but Pegasus employs several optimisations that improve runtime performance and resource allocation.
 
-Pegasus makes a clear distinction between high-level workflows defined by users their actual executed form. Abstract workflows allow portability to many runtime platforms and free the user from explicitly indicating specific resources that should perform the work, while concrete workflows precisely bind execution stages to specific storage, computation, and network resources. This setup allows for multiple optimisations that would otherwise be impossible, particularly considering the fast dynamics of cloud and grid platforms. The latest release of application relies on four essential components \cite{Deelman2013, Deelman2016}:
+Pegasus makes a clear distinction between high-level workflows defined by users from their actual executed form. Abstract workflows allow portability to many runtime platforms and free the user from explicitly indicating specific resources that should perform the work, while concrete workflows precisely bind execution stages to specific storage, computation, and network resources. This setup allows for multiple optimisations that would otherwise be impossible, particularly considering the fast dynamics of cloud and grid platforms. The latest release of Pegasus relies on four essential components \cite{Deelman2013, Deelman2016}:
 
 \begin{itemize}
 	\item The \textit{mapper} receives an abstract workflow as an input and produces a concrete workflow, defining the software and hardware requirements of the computation. Additionally, it performs metadata processing to enable data provenance tracking and modifies the structure of the workflow by grouping suitable tasks.
@@ -242,14 +242,14 @@ Pegasus performs most of its important optimisations at the mapping stage, since
 \begin{itemize}
 	\item \textit{Data movement}. This refers to ensuring that data required by a job is collocated with resources where it is executed. For example, copying input data from a user's local server to EBS is highly preferred when running jobs on EC2 because Amazon guarantees low latency when accessing its own storage systems.
 	\item \textit{Data reuse}. Pegasus is able to reuse intermediate results of the workflow that have already been computed during previous runs of the workflow if the definitions of the tasks and input data have not changed. The process requires careful coordination with the \textit{data cleanup} phase in order to simultaneously leverage already known results and avoid wasting storage capacity.
-	\item \textit{Job clustering}. For many short-lived jobs, orchestrating the transfer of task results across machines in a cluster and long queueing times can incur high latency costs. Grouping related tasks into larger entities helps alleviate this problem by not only reducing load on the machine that hosts the job submission system, but also improving overall performance for workflows with large number of tasks by over 90\%, as previous studies have shown \cite{Deelman2010, Singh2008}. \textit{Level-based horizontal clustering} (Figure \ref{HorizontalClustering}) and \textit{label-based clustering} (Figure \ref{LabelClustering}) are some of the most effective strategies, although the latter requires users to explicitly label tasks when defining the workflow \cite{Deelman2013}.
+	\item \textit{Job clustering}. For many short-lived jobs, orchestrating the transfer of task results across machines in a cluster and long queueing times can incur high latency costs. Grouping related tasks into larger entities helps alleviate this problem by reducing the load on the machine that hosts the job submission system. This strategy also improves the overall performance of workflows with a large number of tasks by over 90\%, as previous studies have shown \cite{Deelman2010, Singh2008}. \textit{Level-based horizontal clustering} (Figure \ref{HorizontalClustering}) and \textit{label-based clustering} (Figure \ref{LabelClustering}) are some of the most effective strategies, although the latter requires users to explicitly label tasks when defining the workflow \cite{Deelman2013}.
 \end{itemize}
 	
 \vspace{5mm}
 \begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.23]{figures/HorizontalClustering.png}
-	\caption{Level-based horizontal clustering targetting parallelisable tasks \cite{Deelman2013}.}
+	\caption{Level-based horizontal clustering targeting parallelisable tasks \cite{Deelman2013}.}
 	\label{HorizontalClustering}
 \end{figure}
 
@@ -263,9 +263,11 @@ Pegasus performs most of its important optimisations at the mapping stage, since
 
 Although all the optimisations and design ideas discussed above apply to all distributed execution platforms, earlier deployments of Pegasus have confirmed several advantages of cloud environments. These include on-demand provisioning of resources and ability to easily ensure consistency of software installed on all the machines in a fleet \cite{Deelman2016}. 
 
-However, further development of workflow management systems is needed in order to fully exploit cloud features such as automatic scaling of available resources. The main problem is that the load of instances occurs in the case of long-running jobs since upscaling usually leaves unused extra resources, while downscaling is even more challenging because long individual tasks can not be split up any further. Basic solutions involve only allowing automatic scaling on idle instances or when having many short-lived jobs, but this is definitely an area open to future work.
+However, further development of workflow management systems is needed in order to fully exploit cloud features such as automatic scaling of available resources. The main problem is that the load of instances occurs in the case of long-running jobs. Indeed, upscaling usually leaves unused extra resources, while downscaling is even more challenging because long individual tasks cannot be split up any further. Basic solutions involve only allowing automatic scaling on idle instances or when having many short-lived jobs, but this is definitely an area open to future work.
 
-Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software, meaning that the technical barrier for using the cloud is higher than for similar grid-based systems that are usually professionally managed.
+Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software. The technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually professionally managed.
+
+\todo[inline]{@Adrian: not sure to understand this last sentence (even after my change). Do you mean that it's easier to use Pegasus with grids than clouds?}
 
 \section{Cluster Deployment on Clouds}
 
