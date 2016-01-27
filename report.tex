@@ -1,52 +1,50 @@
 \documentclass[11pt,a4paper]{report}
+\usepackage[left=3cm,right=3cm, top=3cm]{geometry}
+
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
-\usepackage{fullpage}
 \usepackage{hyperref}
-\usepackage{tabulary}
-\usepackage{amsthm}
 \usepackage{syntax}
 \usepackage{listings}
-\usepackage{lipsum}
 \usepackage{verbatim}
 \usepackage{color}
-\usepackage{mathtools}
-\usepackage{breqn}
 \usepackage{caption}
-\usepackage{sectsty}
-\usepackage{multirow}
 \usepackage{url}
 \usepackage{cite}
 \usepackage[parfill]{parskip}
 \usepackage{paralist}
 \usepackage{enumitem}
 \usepackage{color}
-\usepackage{wasysym}
 \usepackage[table,xcdraw]{xcolor}
-\usepackage{float}
 \usepackage{todonotes}
 \usepackage{chngcntr}
 \usepackage{enumitem}
 \usepackage[nottoc,notlot,notlof]{tocbibind}
+\usepackage{fancyhdr}
 
-\sectionfont{\Large}
+ % Headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{}
+\chead{}
+\rhead{\nouppercase{\leftmark}}
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
+\renewcommand{\headrulewidth}{0.05pt}
+\renewcommand{\chaptermark}[1]{\markboth{\chaptername\ \thechapter.\ \itshape #1}{}}
 
 \setlength{\parindent}{0cm}
-\setlength{\parskip}{0.30cm}
-\setlist[itemize]{parsep=0.18cm}
-
-\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
-\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
-
-\renewcommand{\bibname}{References}
-
-\def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1}\item[]}
-\let\endchangemargin=\endlist
+\setlength{\parskip}{0.45cm}
+\setlist[itemize]{parsep=0.20cm}
 
 \begin{document}
+
+% Bibliography
 \bibliographystyle{is-unsrt}
+\renewcommand{\bibname}{References}
 \counterwithout{figure}{chapter}
 
 \hypersetup{allcolors=black}
@@ -94,7 +92,7 @@ Options that OpenMOLE currently offers to run workflows include:
 	\item Multithreading on a local machine.
 	\item SSH connections to remote servers.
 	\item Grids, such as EGI (European Grid Infrastructure) \cite{EGI}.
-	\item Clusters managed by a wide range of software, including PBS (Portable Batch System) \cite{PBS}, Torque \cite{Torque}, SGE (Sun Grid Engine) \cite{SGE}, Slurm \cite{SLURM}, Condor \cite{HTCondor}, or OAR \cite{OAR}.
+	\item Clusters managed by a wide range of software, including PBS (Portable Batch System) \cite{PBS}, Torque \cite{Torque}, SGE (Sun Grid Engine) \cite{SGE}, Slurm \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
 \end{itemize}
 
 However, OpenMOLE does not support distributing the workload on cloud computing environments. at the moment. This is a significant disadvantage compared to other similar applications, since cloud providers are ubiquitous and cheap resources. Providing cloud support will enable a large user base to accelerate their research using OpenMOLE.
@@ -169,7 +167,6 @@ Galaxy \cite{Goecks2010} is another community specific web-based platforms for m
 CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage (EBS) can be explicitly turned on from the CloudMan Console.
 
 \todo[inline]{@Adrian: in the introduction where you plan to compare grids and clouds, it might be worth having a subsection to define Amazon specific terminology: EC2, S3, EBS, ...}
-
 
 \begin{figure}[h]
 	\centering
