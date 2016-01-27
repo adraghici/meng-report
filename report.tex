@@ -159,13 +159,16 @@ The system has three main functional components:
 	\item \textit{Taverna Player} is the web interface used by the client to send requests to Taverna Server.
 \end{itemize}
 
-Despite its maturity, Taverna does not, on its own, have built-in support for automatic server installations on grids or clouds. Instead, users need to develop custom orchestration infrastructure for these environments to allow deploying clusters coordinated by the instance where Taverna Server is installed. Both caGrid \cite{caGrid} and BioVeL \cite{BioVeL} have implemented such solutions \cite{TavernaGrid, Donvito} to take advantage of grid resources. On Amazon EC2, Taverna is only available as an Amazon Machine Image (AMI) runnable on a single instance, without support for clustering.
+Despite its maturity, Taverna does not, on its own, have built-in support for automatic server installations on grids or clouds. Instead, users need to develop custom orchestration infrastructure for these environments to allow deploying clusters coordinated by the instance where Taverna Server is installed. Both caGrid \cite{caGrid} and BioVeL \cite{BioVeL} have implemented such solutions \cite{TavernaGrid, Donvito} to take advantage of grid resources. On Amazon EC2, Taverna is only available as an Amazon Machine Image (AMI) runnable on a single instance, without support for distributed execution.
 
 \subsection{Galaxy}
 
 Galaxy \cite{Goecks2010} is another community specific web-based platforms for managing workflows, focussing on genomic research. Conceptually, it is driven by the motivation to ensure accessibility of computational resources by providing researchers with simple web interfaces to interact with distributed environments, reproducibility of experiments by tagging and recording order and intent of each action users take, as well as transparency of findings by consolidating a robust collaboration framework.
 
-CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from the an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage (EBS) can be explicitly turned on from the CloudMan Console.
+CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage (EBS) can be explicitly turned on from the CloudMan Console.
+
+\todo[inline]{@Adrian: in the introduction where you plan to compare grids and clouds, it might be worth having a subsection to define Amazon specific terminology: EC2, S3, EBS, ...}
+
 
 \begin{figure}[h]
 	\centering
@@ -176,7 +179,10 @@ CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy t
 
 CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination.
 
-One major advantage of CloudMan is its modular architecture, under which instances only use a lightweight AMI and reference the tools they need from external storage such as EBS, as shown in Figure \ref{CloudManArch}. This grants further flexibility in terms of updating the system, because the AMI does not need to be repackaged too frequently and the state of machines can be modified by simply writing on persistent storage.
+\todo[inline]{This is a major problem when using commercial clouds, as it means the user keeps on being charged for resources he's not really using anymore}
+
+
+One major advantage of CloudMan is its modular architecture, under which instances only use a lightweight AMI and reference the tools they need from external storage such as EBS, as shown in Figure \ref{CloudManArch}. This grants further flexibility in terms of updating the system, because the AMI does not need to be repackaged frequently and the state of machines can be modified by simply writing on persistent storage.
 
 \vspace{5mm}
 \begin{figure}[h]
