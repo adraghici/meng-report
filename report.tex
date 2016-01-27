@@ -110,7 +110,8 @@ The key objectives of the project include:
 \begin{itemize}
 	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
 	\item Implementing a solution using the chosen tools as part of GridScale \cite{Passerat2016}, the engine powering OpenMOLE's distributed computation service. The library already has a modular structure, so development should be possible in isolation from the rest of the already production-ready modules.
-	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently. Results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
+	\item Fully automating the process of provisioning and and bootstrapping individual machines or clusters in the cloud. This should be invisible to the end user so that the only required configuration steps are entering the access credentials for the respective cloud and possibly setting up limits on resource consumption in order to avoid excessive costs.
+	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently and results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
 \end{itemize}
 
 \todo[inline]{@Jonathan: We insist on not only allowing to run jobs in cloud environments, but actually allowing to run them on clusters in the cloud. Most other workflow systems do not really make a distinction at this level and they instead say they support EC2 if they have an AMI that allows running the job on an EC2 instance. However, I'm not sure why we necessarily need a cluster, since EC2 already has robust autoscaling features. Is it because we want to parallelise the execution of tasks and this can not be achieved by a machine being autoscaled to a larger capacity? Would it also be the case that an extra machine could not be used as effectively as when for example using instances as servers for client requests, since a long-running job filling up the capacity of an instance can not be simply split up midway through execution?}
@@ -286,6 +287,9 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 \subsection{Starcluster}
 
 \chapter{Project Plan}
+
+
+
 \begin{itemize}
 	\item Minimum viable product
 	\item Exact implementation goals
@@ -293,6 +297,7 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 \end{itemize}
 
 \chapter{Evaluation Plan}
+
 \begin{itemize}
 	\item Evaluation at each milestone
 	\item Benchmarks (against known workflow engines from bioinformatics / biomedical imaging world)
