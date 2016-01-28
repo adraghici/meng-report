@@ -119,7 +119,7 @@ The key objectives of the project include:
 
 \chapter{Background}
 
-This chapter gives an overview of the current state of the workflow engine ecosystem by looking at some of the existing platforms with a focus on the execution environments they support, and cloud deployments in particular. Next, we describe GridScale, the library used by OpenMOLE to access distributed computing resources and present some basic ideas to enhance it with support for a cloud infrastructure. This leads to the last section, where we investigate tools and frameworks that could allow scheduling of jobs on a cluster of instances provisioned from a cloud.
+This chapter starts with a brief comparison between grids and cloud computing. Next, it gives an overview of the current state of the workflow engine ecosystem by looking at some of the existing platforms with a focus on the execution environments they support, and cloud deployments in particular. This leads to the last section, where we investigate tools and frameworks that could allow deploying a cluster in the cloud and scheduling jobs on the respective instances.
 
 \section{Grids and Cloud Computing}
 
@@ -263,7 +263,7 @@ Although all the optimisations and design ideas discussed above apply to all dis
 
 However, further development of workflow management systems is needed in order to fully exploit cloud features such as automatic scaling of available resources. The main problem is that the load of instances occurs in the case of long-running jobs. Indeed, upscaling usually leaves unused extra resources, while downscaling is even more challenging because long individual tasks cannot be split up any further. Basic solutions involve only allowing automatic scaling on idle instances or when having many short-lived jobs, but this is definitely an area open to future work.
 
-Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software. The technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually professionally managed.
+Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
 
 \todo[inline]{@Adrian: not sure to understand this last sentence (even after my change). Do you mean that it's easier to use Pegasus with grids than clouds?}
 
@@ -302,6 +302,9 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 	\item Show ease of running on different environments
 	\item Evaluate
 \end{itemize}
+
+% \section{OpenMOLE and GridScale}
+% We describe GridScale, the library used by OpenMOLE to access distributed computing resources and present some basic ideas to enhance it with support for a cloud infrastructure. 
 
 \listoftodos
 
