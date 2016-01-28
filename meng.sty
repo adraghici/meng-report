@@ -1,0 +1,51 @@
+\ProvidesPackage{meng}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{syntax}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{float}
+\usepackage{color}
+\usepackage{caption}
+\usepackage{url}
+\usepackage{cite}
+\usepackage[parfill]{parskip}
+\usepackage{paralist}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{todonotes}
+\usepackage{chngcntr}
+\usepackage{enumitem}
+\usepackage[nottoc,notlot,notlof]{tocbibind}
+\usepackage{fancyhdr}
+\usepackage[left=3cm,right=3cm, top=3cm]{geometry}
+
+ % Headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{}
+\chead{}
+\rhead{\nouppercase{\leftmark}}
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
+\renewcommand{\headrulewidth}{0.05pt}
+\renewcommand{\chaptermark}[1]{\markboth{\chaptername\ \thechapter.\ \itshape #1}{}}
+
+% Paragraph and list spacing
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{0.45cm}
+\setlist[itemize]{parsep=0.20cm}
+
+% Table of contents and bibliography
+\bibliographystyle{is-unsrt}
+\renewcommand{\bibname}{References}
+\counterwithout{figure}{chapter}
+
+% Root paths
+\graphicspath{{img/}}

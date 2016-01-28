@@ -1,0 +1,64 @@
+\chapter{Introduction}
+
+Scientists have spent decades building intricate mathematical models for systems and phenomena observed in all areas of life sciences. Such models have greatly expanded our understanding of the complex systems they describe, but the dramatic developments in technology and increase in widely available computational power in recent years have exposed another direction in which current research methodologies can progress.
+
+Simulation in high performance computing environments is today the main approach used to validate scientific models in application domains ranging from astronomy to biomedical or earthquake science. Analytical solutions are often impossible to obtain, given the non-linear nature of these systems, so empirical observations drawn from running them in virtual settings is the only sensible option for further tuning and optimisation.
+
+The prevalence of hypotheses developed by centralising and mining vast arrays of data sources has led to an era of data-centric research \cite{Goble2009}, where powerful cluster, grid and cloud computing platforms are open for scientific usage. However, the expertise required to operate this infrastructure is beyond the skill set of most researchers, so the efficiency of experimentation and the quality of insights drawn from it are heavily influenced by the performance of tools available to manage and process the available data.
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[scale=0.22]{WorkflowExample.png}
+	\caption{Workflow example \cite{Curcin2008}.}
+	\label{WorkflowExample}
+\end{figure}
+
+Workflow management systems provide support for creating data processing pipelines and automating historically tedious tasks such as tuning program parameters by running them repeatedly against many different datasets, defining work units and their interdependencies, or collecting and persisting results of analyses \cite{Goble2009, Taylor2007}. This is all achieved in the context of delegating the work efficiently over resources offered by distributed computing environments.
+
+\section{Motivation}
+
+Although multiple workflow management systems such as Taverna \cite{Taverna}, Kepler \cite{Kepler}, Pegasus \cite{Pegasus} or Galaxy \cite{Galaxy} are already established, many of them focus on specific scientific areas. Since the bioinformatics community is particularly active in adopting the usage of scientific workflows, tools like Galaxy and Kepler have been historically tailored for the needs of researchers in this field.
+
+OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the natural parallelism of simulation algorithms and targets distributed computing environments to run them. Compared to other existing platforms, OpenMOLE exposes some key features that make it unique:
+
+\begin{itemize}
+	\item It is not intended for use within a single scientific community, allowing for generic formalisms that make it general purpose.
+	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and cluster provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
+	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It integrates a standalone packaging system, CARE \cite{Janin2014}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
+	\todo[inline]{@Adrian: I've removed the reference to Yapa (now deprecated) and replaced with CARE, which is the underlying engine of Yapa anyway.}
+	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}.
+	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. This makes workflows reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
+	\item DSL? \todo[inline]{@Adrian: it's definitely an asset for OpenMOLE. Not sure we're the only ones using one though.}
+	\item Works with existing applications \todo[inline]{A great advantage of OpenMOLE is you can directly reuse the codes you've developed and are not limited by a pre-configured toolbox}
+\end{itemize}
+
+
+Options that OpenMOLE currently offers to run workflows include:
+
+\begin{itemize}
+	\item Multithreading on a local machine.
+	\item SSH connections to remote servers.
+	\item Grids, such as EGI (European Grid Infrastructure) \cite{EGI}.
+	\item Clusters managed by a wide range of software, including PBS (Portable Batch System) \cite{PBS}, Torque \cite{Torque}, SGE (Sun Grid Engine) \cite{SGE}, Slurm \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
+\end{itemize}
+
+However, OpenMOLE does not support distributing the workload on cloud computing environments. at the moment. This is a significant disadvantage compared to other similar applications, since cloud providers are ubiquitous and cheap resources. Providing cloud support will enable a large user base to accelerate their research using OpenMOLE.
+
+\section{Objectives}
+
+The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{EC2}, as well as on Imperial College's Department of Computing private CloudStack deployment.
+
+\todo[inline]{Change to something like "running jobs on Amazon EC2, while remaining generic enough to potentially target other cloud providers (Google Cloud, OpenStack, ...)}
+
+The key objectives of the project include:
+
+\begin{itemize}
+	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
+	\item Implementing a solution using the chosen tools as part of GridScale \cite{Passerat2016}, the engine powering OpenMOLE's distributed computation service. The library already has a modular structure, so development should be possible in isolation from the rest of the already production-ready modules.
+	\item Fully automating the process of provisioning and and bootstrapping individual machines or clusters in the cloud. This should be invisible to the end user so that the only required configuration steps are entering the access credentials for the respective cloud and possibly setting up limits on resource consumption in order to avoid excessive costs.
+	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently and results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
+\end{itemize}
+
+\todo[inline]{@Jonathan: We insist on not only allowing to run jobs in cloud environments, but actually allowing to run them on clusters in the cloud. Most other workflow systems do not really make a distinction at this level and they instead say they support EC2 if they have an AMI that allows running the job on an EC2 instance. However, I'm not sure why we necessarily need a cluster, since EC2 already has robust autoscaling features. Is it because we want to parallelise the execution of tasks and this can not be achieved by a machine being autoscaled to a larger capacity? Would it also be the case that an extra machine could not be used as effectively as when for example using instances as servers for client requests, since a long-running job filling up the capacity of an instance can not be simply split up midway through execution?}
+
+\todo[inline]{If the above is the case, useful references to automatic upscaling and downscaling depending on load can be found in "Scientific Workflow Applications on Amazon EC2" and the Pegasus papers - especially the 2016 one}.
