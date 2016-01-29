@@ -164,9 +164,21 @@ However, further development of workflow management systems is needed in order t
 
 Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
 
-\subsection{SWF}
+% \subsection{SWF}
 
 \section{Cluster Deployment on Clouds}
+
+In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE would allow leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing an early prototype, which can later be improved by using native cloud APIs. 
+
+We also look at Jclouds \cite{jclouds}, a Java library that unifies the cloud services APIs for most mainstream commercial and open-source cloud providers, providing a starting point for an implementation that would be concerned with more fine-grained control of cloud specific features.
+
+Throughout the investigation, we focus on the features relevant to managing cloud infrastructures. We are interested in a tool that:
+\begin{itemize}
+	\item Supports most of the important cloud infrastructures (EC2, Google Cloud, OpenStack, CloudStack). We initially only target EC2, but we also intend to integrate with other platforms in the future.
+	\item Is lightweight enough not to cause significant overhead on the performance of the instances in the cluster.
+	\item Is open-source, since we plan to use it as part of GridScale. However, we also examine some commercial and proprietary systems to better educate our decision.
+	\item Allows for effective automation in a concise manner by providing a clear and robust command line interface or API.
+\end{itemize}
 
 \subsection{Mesos}
 
@@ -176,9 +188,11 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 
 \subsubsection{Chronos}
 
-\subsection{Starcluster}
+\subsection{StarCluster}
 
-\subsection{elasticluster}
+\subsection{Elasticluster}
+
+\subsection{Jclouds}
 
 \subsection{CfnCluster}
 
