@@ -1,7 +1,69 @@
 \chapter{Project Plan}
 
-\begin{itemize}
-	\item Minimum viable product
-	\item Exact implementation goals
-	\item Timeline
-\end{itemize}
+We plan to take an incremental approach towards the implementation of the project, which means that we will favour an early prototype to confirm that our choice of tools is suitable for the project. If this is successful, we can move on towards refining the implementation and consider new stretch goals that can make OpenMOLE more competitive among workflow management systems that run in the cloud.
+
+The minimum viable product is a system where executing jobs on Amazon EC2 is possible even if it requires some manual effort from the user, since this is the norm for most existent workflow systems. This basic mode of operation accepts any storage system, although the long-term goal is to allow the user to select either the cloud or the local environment for persistent data storage.
+
+The end goal is to have support for automatic deployment of jobs on EC2, with the user only providing access credentials and a limit on the number of provisioned instances. We initially plan to create an SGE cluster from the provisioned instances, so that we are able to reuse the job submission architecture for clusters already implemented in GridScale. However, as a stretch goal we can also experiment with a native implementation for the cloud, which would allow for further optimisation of resource allocation by appropriately exploiting automatic scaling features. By inspecting the number and expected duration of jobs in the workflow, we can potentially develop a resource allocation scheme that minimises resource consumption.
+
+Shown below is the estimated timeline of the project, including the work that has already been done. Note that we intend to document progress in the report as we advance.
+
+\begin{enumerate}
+	\item November 1st - January 29th
+	\begin{itemize}
+		\item General research on the topic of workflow management systems.
+		\item Understand the basic structure of OpenMOLE and GridScale, the engine powering its distributed computation capabilities.
+		\item Investigate the design and features of other workflow management systems.
+		\item Research on cloud platforms and available cluster management tools with their respective APIs.
+	\end{itemize}
+	
+	\item January 30th - February 5th
+	\begin{itemize}
+		\item Decide on a set of chosen tools and technologies.
+	\end{itemize}
+	
+	\item February 6th - February 26th
+	\begin{itemize}
+		\item Test the chosen tools and their APIs in isolation from OpenMOLE and GridScale. The reason for the longer allocated period is that we want to catch any incompatibilities as soon as possible.
+	\end{itemize}
+	
+	\item February 27th - March 8th
+	\begin{itemize}
+		\item Design the structure of the integrations with OpenMOLE and GridScale. Closely investigate the existing codebase.
+	\end{itemize}
+	
+	\item March 9th - March 27th
+	\begin{itemize}
+		\item Exam preparation.
+	\end{itemize}
+	
+	\item March 28th - April 10th
+	\begin{itemize}
+		\item Implement the cluster deployment and GridScale integration.
+	\end{itemize}
+
+	\item April 11th - April 17th
+	\begin{itemize}
+		\item Implement the GridScale integration with OpenMOLE.
+	\end{itemize}
+	
+	\item April 18th - May 1st
+	\begin{itemize}
+		\item Testing, bug fixing and potential extensions.
+	\end{itemize}
+	
+	\item May 2nd - May 15th
+	\begin{itemize}
+		\item Evaluation of the implementation.
+	\end{itemize}
+
+	\item May 16th - May 29th
+	\begin{itemize}
+		\item Finish final report and presentation slides.
+	\end{itemize}
+	
+	\item May 30th - June 26th
+	\begin{itemize}
+		\item Buffer time to deal with unexpected problems.
+	\end{itemize}
+\end{enumerate}
