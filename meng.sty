@@ -3,11 +3,15 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+% Figures
 \usepackage{graphicx}
+% URLs
 \usepackage{hyperref}
 \usepackage{syntax}
 \usepackage{listings}
+% Code
 \usepackage{verbatim}
+% Using [H] on figures
 \usepackage{float}
 \usepackage{color}
 \usepackage{caption}
@@ -18,12 +22,21 @@
 \usepackage{enumitem}
 \usepackage{color}
 \usepackage[table,xcdraw]{xcolor}
+% Todo notes
 \usepackage{todonotes}
 \usepackage{chngcntr}
 \usepackage{enumitem}
 \usepackage[nottoc,notlot,notlof]{tocbibind}
+% Footers and headers
 \usepackage{fancyhdr}
+% Putting the footnote at the bottom
+\usepackage[bottom]{footmisc}
+% Page setup
 \usepackage[left=3cm,right=3cm, top=3cm]{geometry}
+
+% Allow for subsubections to be numbered and included in the table of contents
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
 
  % Headers and footers
 \pagestyle{fancy}
@@ -39,8 +52,8 @@
 
 % Paragraph and list spacing
 \setlength{\parindent}{0cm}
-\setlength{\parskip}{0.45cm}
-\setlist[itemize]{parsep=0.20cm}
+\setlength{\parskip}{0.46cm}
+\setlist[itemize]{parsep=0.22cm}
 
 % Table of contents and bibliography
 \bibliographystyle{is-unsrt}

@@ -4,9 +4,38 @@ This chapter starts with a brief comparison between grids and cloud computing. N
 
 \section{Grids and Cloud Computing}
 
+Ever since the early days of high performance computing, researchers have been running resource-intensive experiments and simulations on supercomputers, machines with hundreds of thousands of cores and high parallelisation capabilities \cite{Supercomp}. However, in the last two decades the extensive costs and restricted access to such systems have shifted computation towards local clusters and grids.
+
+Grids are distributed networks of remote computers crowdsourced in general from academic communities. They harness unused resources in the infrastructure and are managed through middleware software (e.g. EMI\footnote{European Middleware Initiative} \cite{EMI}) that coordinates incoming computation across the machines they interconnect \cite{Myerson}. Access to grids is usually free and restricted to research projects.
+
+Although clouds evolve from grids and both aim to achieve similar goals in the area of distributed computing, there are some substantial differences in terms of features and how they operate \cite{Juve2009, Myerson, CloudsGrids}:
+
+\begin{itemize}
+	\item Clouds offer on-demand provisioning of resources. This enables users to easily scale infrastructures hosted in the cloud by simply requesting more instances as resource requirements grow. They create an illusion that resources can be provisioned infinitely by functioning at such a large scale that they can fulfil practically any demands.
+	\item As opposed to grid operators, cloud providers are generally commercial and charge users on a pay as you go basis. Usage is usually measured in hours per instance and the business model creates no upfront planning or costs for users. Since they are paid services, cloud providers also offer better reliability and uptime guarantees. Private clouds can also be set up for users that want to abstract away their pool of resources but are concerned about security of their data.
+	\item Clouds are particularly suitable for hosting long-running jobs, such as web servers. In this case, users can easily take advantage of features such as automatic scaling, where more servers are automatically provisioned to match abrupt increases or decreases in the number of incoming requests.
+	\item Virtualisation is used extensively in clouds and it permits running legacy software that has very strict environment requirements. Although they might be sharing a physical machine with other consumers, users can fully customise the virtual runtime in isolation by choosing the operating system and libraries they need. Consolidating a homogeneous fleet of machines is also straightforward, since snapshots of a runtime environment can easily be ported to other instances.
+\end{itemize}
+
+Considering the advantages listed above and growing support for cloud services, they are a good fit for the deployment of workflow management systems. However, as discussed in the next section, current workflow platforms do not take full advantage of advanced cloud features such as automatic scaling.
+
+\subsection{Amazon Web Services}
+
+Since the project primarily aims at supporting Amazon EC2 as a target environment for running experiments via OpenMOLE, this subsection briefly describes some of the basic terminology related to Amazon's cloud services:
+
+\begin{itemize}
+	\item \textit{AWS}\footnote{Amazon Web Services} \cite{AWS} is the whole suite of services provided by Amazon as part of its cloud platform.
+	\item \textit{EC2}\footnote{Elastic Compute Cloud} \cite{EC2} is the cloud service that provides on-demand computational resources.
+	\item \textit{S3}\footnote{Simple Storage Service} \cite{S3} is a general-purpose persistent file storage service.
+	\item \textit{EBS}\footnote{Elastic Block Store} \cite{EBS} concerns storage volumes that are attached to machines provisioned through EC2.
+	\item An \textit{AMI}\footnote{Amazon Machine Image} is a snapshot of the environment on an EC2 machine. New EC2 instances can easily be created from a given AMI.
+\end{itemize}
+
 \todo[inline]{@Jonathan: I was thinking of giving an overview of what the similarities and differences between grids and clouds are, as I was myself confused in the beginning - probably a short description of EC2 and CloudStack  and a writeup of something similar to these articles: http://www.cloud-lounge.org/clouds-and-grids-compared.html and http://www.ibm.com/developerworks/library/wa-cloudgrid/. Is it worth it?}
 
 \todo[inline]{Also describe EC2, S3, EBS etc.}
+
+\todo[inline]{@Adrian: in the introduction where you plan to compare grids and clouds, it might be worth having a subsection to define Amazon specific terminology: EC2, S3, EBS, ...}
 
 \todo[inline]{Can use Pegasus papers for a nice comparison from the point of view of workflow management systems.}
 
@@ -47,9 +76,7 @@ Despite its maturity, Taverna does not, on its own, have built-in support for au
 
 Galaxy \cite{Goecks2010} is another community specific web-based platforms for managing workflows, focussing on genomic research. Conceptually, it is driven by the motivation to ensure accessibility of computational resources by providing researchers with simple web interfaces to interact with distributed environments, reproducibility of experiments by tagging and recording order and intent of each action users take, as well as transparency of findings by consolidating a robust collaboration framework.
 
-CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage (EBS) can be explicitly turned on from the CloudMan Console.
-
-\todo[inline]{@Adrian: in the introduction where you plan to compare grids and clouds, it might be worth having a subsection to define Amazon specific terminology: EC2, S3, EBS, ...}
+CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage can be explicitly turned on from the CloudMan Console.
 
 \begin{figure}[H]
 	\centering
@@ -58,10 +85,7 @@ CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy t
 	\label{CloudManConsole}
 \end{figure}
 
-CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination.
-
-\todo[inline]{This is a major problem when using commercial clouds, as it means the user keeps on being charged for resources he's not really using anymore}
-
+CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination. This is a problem in the context of EC2 or other commercial clouds, since it means that the user might continue to be charged for resources that are no longer being used.
 
 One major advantage of CloudMan is its modular architecture, under which instances only use a lightweight AMI and reference the tools they need from external storage such as EBS, as shown in Figure \ref{CloudManArch}. This grants further flexibility in terms of updating the system, because the AMI does not need to be repackaged frequently and the state of machines can be modified by simply writing on persistent storage.
 
@@ -148,20 +172,22 @@ However, further development of workflow management systems is needed in order t
 
 Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
 
-\todo[inline]{@Adrian: not sure to understand this last sentence (even after my change). Do you mean that it's easier to use Pegasus with grids than clouds?}
+\subsection{SWF}
 
 \section{Cluster Deployment on Clouds}
 
-\subsection{Chronos}
+\subsection{Mesos}
 
-\subsection{Mesosphere}
+\subsubsection{Mesosphere}
 
-\subsection{CometCloud}
+\subsubsection{Marathon}
+
+\subsubsection{Chronos}
+
+\subsection{Starcluster}
 
 \subsection{elasticluster}
 
-\subsection{SWF}
-
 \subsection{CfnCluster}
 
-\subsection{Starcluster}
+\subsection{CometCloud}

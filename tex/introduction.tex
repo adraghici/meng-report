@@ -8,7 +8,7 @@ The prevalence of hypotheses developed by centralising and mining vast arrays of
 
 \begin{figure}[H]
 	\centering
-		\includegraphics[scale=0.22]{WorkflowExample.png}
+		\includegraphics[scale=0.25]{WorkflowExample.png}
 	\caption{Workflow example \cite{Curcin2008}.}
 	\label{WorkflowExample}
 \end{figure}
@@ -25,13 +25,10 @@ OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the 
 	\item It is not intended for use within a single scientific community, allowing for generic formalisms that make it general purpose.
 	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and cluster provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
 	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It integrates a standalone packaging system, CARE \cite{Janin2014}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
-	\todo[inline]{@Adrian: I've removed the reference to Yapa (now deprecated) and replaced with CARE, which is the underlying engine of Yapa anyway.}
-	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}.
+	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}. This means that already existing applications are not limited by a pre-configured toolbox and run as expected by default.
 	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. This makes workflows reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
-	\item DSL? \todo[inline]{@Adrian: it's definitely an asset for OpenMOLE. Not sure we're the only ones using one though.}
-	\item Works with existing applications \todo[inline]{A great advantage of OpenMOLE is you can directly reuse the codes you've developed and are not limited by a pre-configured toolbox}
+	\item The DSL\footnote{Domain Specific Language} it uses to create workflows is an extension of the Scala \cite{Scala} programming language. This allows for type-safe job definitions and enables OpenMOLE to catch configuration errors earlier than other systems that rely on plain text descriptions.
 \end{itemize}
-
 
 Options that OpenMOLE currently offers to run workflows include:
 
@@ -39,16 +36,14 @@ Options that OpenMOLE currently offers to run workflows include:
 	\item Multithreading on a local machine.
 	\item SSH connections to remote servers.
 	\item Grids, such as EGI (European Grid Infrastructure) \cite{EGI}.
-	\item Clusters managed by a wide range of software, including PBS (Portable Batch System) \cite{PBS}, Torque \cite{Torque}, SGE (Sun Grid Engine) \cite{SGE}, Slurm \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
+	\item Clusters managed by a wide range of software, including PBS\footnote{Portable Batch System} \cite{PBS}, Torque \cite{Torque}, SGE\footnote{Sun Grid Engine} \cite{SGE}, Slurm \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
 \end{itemize}
 
 However, OpenMOLE does not support distributing the workload on cloud computing environments. at the moment. This is a significant disadvantage compared to other similar applications, since cloud providers are ubiquitous and cheap resources. Providing cloud support will enable a large user base to accelerate their research using OpenMOLE.
 
 \section{Objectives}
 
-The goal of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main objective is to support running jobs on Amazon EC2 \cite{EC2}, as well as on Imperial College's Department of Computing private CloudStack deployment.
-
-\todo[inline]{Change to something like "running jobs on Amazon EC2, while remaining generic enough to potentially target other cloud providers (Google Cloud, OpenStack, ...)}
+The aim of this project is to enhance OpenMOLE by adding the ability to target computing clouds to the arsenal of available execution environments. More specifically, the main goal is to support running jobs on Amazon EC2\footnote{Amazon Elastic Compute Cloud} \cite{EC2}, while remaining generic enough to potentially integrate with other cloud providers and infrastructures (Google Cloud \cite{GoogleCloud}, OpenStack \cite{OpenStack} etc.), including Imperial College's Department of Computing private cloud that runs on a CloudStack \cite{CloudStack} deployment.
 
 The key objectives of the project include:
 
@@ -56,9 +51,5 @@ The key objectives of the project include:
 	\item Investigating the APIs and frameworks suitable to instantiate and coordinate computations on cloud infrastructures. In accordance with OpenMOLE's philosophy, we will favour Free and Open Source technologies. Initial steps involve researching the cloud distribution architecture of similar open source scientific workflow engines, as well as industrial software.
 	\item Implementing a solution using the chosen tools as part of GridScale \cite{Passerat2016}, the engine powering OpenMOLE's distributed computation service. The library already has a modular structure, so development should be possible in isolation from the rest of the already production-ready modules.
 	\item Fully automating the process of provisioning and and bootstrapping individual machines or clusters in the cloud. This should be invisible to the end user so that the only required configuration steps are entering the access credentials for the respective cloud and possibly setting up limits on resource consumption in order to avoid excessive costs.
-	\item Evaluating the new environment against Amazon EC2 and the department's cloud, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently and results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
+	\item Evaluating the new environment against Amazon EC2, comparing its performance to benchmarks for already supported grids and clusters and, possibly, other workflow management systems. Comparison with other similar systems is considered a stretch goal, since the evaluation process would be tedious by requiring to define the work units for each system independently and results are likely to be spurious, since they might be caused by limitations in other parts of the system. Benchmarking performance between the cloud and a grid given the performance specifications of instances in both environments is expected to give more valuable results under these conditions.
 \end{itemize}
-
-\todo[inline]{@Jonathan: We insist on not only allowing to run jobs in cloud environments, but actually allowing to run them on clusters in the cloud. Most other workflow systems do not really make a distinction at this level and they instead say they support EC2 if they have an AMI that allows running the job on an EC2 instance. However, I'm not sure why we necessarily need a cluster, since EC2 already has robust autoscaling features. Is it because we want to parallelise the execution of tasks and this can not be achieved by a machine being autoscaled to a larger capacity? Would it also be the case that an extra machine could not be used as effectively as when for example using instances as servers for client requests, since a long-running job filling up the capacity of an instance can not be simply split up midway through execution?}
-
-\todo[inline]{If the above is the case, useful references to automatic upscaling and downscaling depending on load can be found in "Scientific Workflow Applications on Amazon EC2" and the Pegasus papers - especially the 2016 one}.
