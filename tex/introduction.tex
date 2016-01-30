@@ -22,8 +22,8 @@ Although multiple workflow management systems such as Taverna \cite{Taverna}, Ke
 OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the natural parallelism of simulation algorithms and targets distributed computing environments to run them. Compared to other existing platforms, OpenMOLE exposes some key features that make it unique:
 
 \begin{itemize}
-	\item It is not intended for use within a single scientific community, allowing for generic formalisms that make it general purpose.
-	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and cluster provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
+	\item It is not intended for use within a single scientific community, allowing for formalisms that make it generic.
+	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and clusters provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
 	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It integrates a standalone packaging system, CARE \cite{Janin2014}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
 	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}. This means that already existing applications are not limited by a pre-configured toolbox and run as expected by default.
 	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. This makes workflows reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
