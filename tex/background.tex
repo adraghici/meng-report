@@ -26,6 +26,7 @@ Since the project primarily aims at supporting Amazon EC2 as a target environmen
 \begin{itemize}
 	\item \textit{AWS}\footnote{Amazon Web Services} \cite{AWS} is the whole suite of services provided by Amazon as part of its cloud platform.
 	\item \textit{EC2}\footnote{Elastic Compute Cloud} \cite{EC2} is the cloud service that provides on-demand computational resources.
+	\item \textit{EC2 Spot Instances} are normal EC2 instances that are temporarily free and are auctioned by Amazon. The highest bidder retains the right to use the resources.
 	\item \textit{S3}\footnote{Simple Storage Service} \cite{S3} is a general-purpose persistent file storage service.
 	\item \textit{EBS}\footnote{Elastic Block Store} \cite{EBS} concerns storage volumes that are attached to machines provisioned through EC2.
 	\item An \textit{AMI}\footnote{Amazon Machine Image} is a snapshot of the environment on an EC2 machine. New EC2 instances can easily be created from a given AMI.
@@ -170,8 +171,6 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 
 In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE would allow leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing an early prototype, which can later be improved by using native cloud APIs. 
 
-We also look at Jclouds \cite{jclouds}, a Java library that unifies the cloud services APIs for most mainstream commercial and open-source cloud providers, providing a starting point for an implementation that would be concerned with more fine-grained control of cloud specific features.
-
 Throughout the investigation, we focus on the features relevant to managing cloud infrastructures. We are interested in a tool that:
 \begin{itemize}
 	\item Supports most of the important cloud infrastructures (EC2, Google Cloud, OpenStack, CloudStack). We initially only target EC2, but we also intend to integrate with other platforms in the future.
@@ -180,20 +179,51 @@ Throughout the investigation, we focus on the features relevant to managing clou
 	\item Allows for effective automation in a concise manner by providing a clear and robust command line interface or API.
 \end{itemize}
 
-\subsection{Mesos}
+% \subsection{Mesos}
 
-\subsubsection{Mesosphere}
+%\subsubsection{Mesosphere}
 
-\subsubsection{Marathon}
+% \subsubsection{Marathon}
 
-\subsubsection{Chronos}
+% \subsubsection{Chronos}
 
 \subsection{StarCluster}
 
+StarCluster \cite{StarCluster} is an open-source cluster management tool that has been successfully used in both open-source and commercial products. It comes as a command line tool that specifically targets cluster deployment on Amazon EC2 and provides flexible high-level configuration options.
+
+By default, StarCluster provides a set of public AMIs that include a lightweight software stack for job scheduling, intra-cluster communication and common scientific data manipulation tasks. These include:
+\begin{itemize}
+	\item The SGE job queuing and scheduling system.
+	\item OpenMPI \cite{OpenMPI}, a library for running multiple applications in parallel.
+	\item NFS\footnote{Network FIle System} \cite{NFS} for sharing data between the instances in the cluster.
+\end{itemize}
+
+StarCluster relies heavily on the assumption that users prefer sensible defaults rather than extensive configuration. The standard installation requires a single \verb|start| command to set up a cluster with a given number of nodes on EC2 and new clusters are automatically configured with NFS and SGE support. Additionally, no password is needed to \verb|ssh| between nodes in the default security group.
+
+\textit{Elastic Load Balancing} is an important feature based on data extracted from the monitoring component of SGE. Depending on the load of the queuing system, StarCluster automatically scales the size of the cluster by adding or removing instance nodes. This ensures that the number of idle jobs in the system is never excessively high, although it is unclear how the heuristic will perform when handling numerous short-lived or few long-lived tasks.
+
+Despite that tight coupling with specific components of the AWS ecosystem is undesirable, the close integration does bring quite a few advantages in terms of storage flexibility. StarCluster can use S3 and EBS interchangeably, with data from mounted EBS volumes being instantly accessible throughout the cluster.
+
+The tool also provides a bidding strategy for provisioning EC2 Spot Instances that allowed the StarCluster team to reduce instance renting costs by approximately 60\% over longer periods of usage. The framework also deals with the caveat of losing access to the machine due to the current spot price becoming lower than the maximum bid. However, the solution of simply rerunning the failed job on an on-demand instance might not be ideal in the context of long-running services or tasks.
+
 \subsection{Elasticluster}
 
-\subsection{Jclouds}
+Elasticluster \cite{Elasticluster} is another open-source project aiming at simplifying managing clusters on cloud platforms. Although not as popular as StarCluster, it has similar goals and a focus on simplicity and is more generic by supporting all of Amazon EC2, Google Cloud and OpenStack. We do not intend to call from Scala the Python API that Elasticluster provides, so we will focus on the functionality provided by the command-line tool.
 
-\subsection{CfnCluster}
+Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, Slurm, Torque and PBS as scheduling systems installed by default in the cluster.
 
-\subsection{CometCloud}
+However, a disadvantage of Elasticluster is that it does not support the native storage systems for its supported cloud platform providers, since Amazon and Google cloud instances usually report much better performance when coupled with storage on the same platform. Instead, Elasticluster has default support for GlusterFS \cite{GlusterFS}, Ceph \cite{Ceph} and the OrangeFS \cite{OrangeFS} filesystem. Although these options are potentially performant, they suffer from not being as widely popular as the previously mentioned ones.
+
+Elasticluster uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Similarly to StarCluster, it facilitates adding and removing nodes from the cluster, but does not provide the flexibility of dinamically controlling the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
+
+\subsection{Apache Jclouds}
+
+Apache Jclouds \cite{jclouds} is an open-source Java library that unifies the cloud services APIs for most mainstream commercial and open-source cloud providers, providing a starting point for an implementation that would be concerned with more fine-grained control of cloud specific features.
+
+Although it requires more extensive configuration, it supports most commercial and open-source clouds (Amazon EC2, Google Cloud, Microsoft Azure, OpenStack, CloudStack), while not compromising highly provider-specific features. This is achieved by having highly flexible services for computation or advanced tasks like load balancing by using on-demand provisioning features of the clouds. For EC2, our main point of interest, Jclouds supports all type of storage provided by AWS, including EBS for low-latency services, S3 for low costs and Glacier for long-term storage.
+
+However, since it is not a stand-alone application, Jclouds would require us to implement a large part of the logic of tools like Elasticluster or Starcluster, making us lose some of the reliability of services tested for so long in production settings.
+
+% \subsection{CfnCluster}
+
+% \subsection{CometCloud}
