@@ -169,7 +169,7 @@ Despite the trend towards cloud-based systems, the process of running Pegasus wo
 
 \section{Cluster Deployment on Clouds}
 
-In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE would allow leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing an early prototype, which can later be improved by using native cloud APIs. 
+In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE allows leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing functional prototype, which can later be improved by using native cloud APIs in case this is required due to slowdowns caused by the additional clustering layer.
 
 Throughout the investigation, we focus on the features relevant to managing cloud infrastructures. We are interested in a tool that:
 \begin{itemize}
@@ -191,20 +191,35 @@ Throughout the investigation, we focus on the features relevant to managing clou
 
 StarCluster \cite{StarCluster} is an open-source cluster management tool that has been successfully used in both open-source and commercial products. It comes as a command line tool that specifically targets cluster deployment on Amazon EC2 and provides flexible high-level configuration options.
 
-By default, StarCluster provides a set of public AMIs that include a lightweight software stack for job scheduling, intra-cluster communication and common scientific data manipulation tasks. These include:
+By default, StarCluster provides a set of public AMIs that include a lightweight software stack for job scheduling, intra-cluster communication and common scientific data manipulation tasks. From a system administration perspective, the out-of-the-box StarCluster configuration includes:
 \begin{itemize}
-	\item The SGE job queuing and scheduling system.
-	\item OpenMPI \cite{OpenMPI}, a library for running multiple applications in parallel.
 	\item NFS\footnote{Network FIle System} \cite{NFS} for sharing data between the instances in the cluster.
+	\item The SGE job queuing and scheduling system.
+	\item Security group setup for controlling the inbound and outbound traffic from the cluster.
+	\item Password-less \verb|ssh| between the nodes in the default security group.
+	\item The possibility of attaching and mounting EBS drives to be used as NFS-shared storage by all the nodes in the cluster.
 \end{itemize}
 
-StarCluster relies heavily on the assumption that users prefer sensible defaults rather than extensive configuration. The standard installation requires a single \verb|start| command to set up a cluster with a given number of nodes on EC2 and new clusters are automatically configured with NFS and SGE support. Additionally, no password is needed to \verb|ssh| between nodes in the default security group.
+On top of this, the StarCluster AMI also contains tools like OpenMPI \cite{OpenMPI} and IPython \cite{IPython} for writing natively parallel applications. Other features revolve around various preconfigured software packages associated with high-performance computing development stacks, but they go beyond our use cases.
 
-\textit{Elastic Load Balancing} is an important feature based on data extracted from the monitoring component of SGE. Depending on the load of the queuing system, StarCluster automatically scales the size of the cluster by adding or removing instance nodes. This ensures that the number of idle jobs in the system is never excessively high, although it is unclear how the heuristic will perform when handling numerous short-lived or few long-lived tasks.
+StarCluster relies heavily on the assumption that users prefer sensible defaults rather than extensive configuration. The standard installation requires a single \verb|start| command to set up a cluster with a given number of nodes on EC2 and new clusters are automatically configured with NFS and SGE support. Listed below are some of the most useful commands exposed by StarCluster:
+\begin{itemize}
+	\item \verb|start| launches a cluster as per the specification provided in the configuration file. It allows for many different variations of cluster creation, where instances can also be simply started but not provisioned with the default software. The user can also simply perform a dry run and simply simulate starting the cluster to prevent unexpected issues in production.
+	\item \verb|terminate| completely purges the given cluster, shutting down all nodes and removing its previously security group. If the cluster is backed up by EBS volumes, the root volumes of each node can also be deleted.
+	\item \verb|sshmaster| and \verb|sshnode| allow for easy \verb|ssh| access to all nodes in the cluster relying on the AWS keypair provided in the configuration file for authentication. Slave nodes are automatically numbered in a human-readable format - \verb|node001|, \verb|node002|, etc.
+	\item \verb|put| and \verb|get| enable transferring files between the user's local machine and a running cluster, where they are instantly shared via NFS.
+	\item \verb|createkey| is a useful for creating a new \verb|ssh| keypair and simultaneously both saving it locally and importing it to the user's AWS account.
+	\item \verb|addnode| and \verb|removenode| allow for manual upscaling or downscaling by launching new nodes and attaching them as slaves to the cluster or tearing them down.
+	\item \verb|loadbalance| provides an automatic alternative for growing and shrinking the number of nodes in the cluster based on the load of jobs queued in SGE.
+\end{itemize}
+
+\textit{Elastic Load Balancing} is an important feature based on data extracted periodically from the monitoring component of SGE. Depending on the load of the queuing system, StarCluster automatically scales the size of the cluster by adding or removing instance nodes. This ensures that the number of idle jobs in the system is never excessively high, although it is unclear how the heuristic will perform when handling numerous short-lived or few long-lived tasks. 
+
+The load balancing component allows choosing the minimum and maximum number of nodes that the size of the cluster can vary between, as well as its growth rate. The user can align this with domain knowledge about the job submission patterns, meaning that a cluster used to run a highly volatile number of short-lived jobs should adapt faster to the increase in requests and provision more instances at each monitoring iteration than a cluster used to run long-lived jobs. Other useful options include plotting the number of instances used by the cluster over time, the ability to allow the cluster a stabilisation time period during which the load balancer does not run, or automatically killing the cluster after a specific duration or when the job queue is empty.
+
+StarCluster also provides a bidding strategy for provisioning EC2 \textit{spot instances} that allowed the StarCluster team to reduce instance renting costs by approximately 60\% over longer periods of usage. Spot instances allow users to rent currently unexploited resources from idle machines for a significantly lower price than the standard flat rate, with the drawback that access may be suddenly terminated when the original owner needs the computing power back. The framework deals with the caveat of losing access to the machine due to the current spot price becoming lower than the maximum bid. However, the solution of simply rerunning the failed job on an on-demand instance might not be ideal in the context of long-running services or tasks.
 
 Despite that tight coupling with specific components of the AWS ecosystem is undesirable, the close integration does bring quite a few advantages in terms of storage flexibility. StarCluster can use S3 and EBS interchangeably, with data from mounted EBS volumes being instantly accessible throughout the cluster.
-
-The tool also provides a bidding strategy for provisioning EC2 Spot Instances that allowed the StarCluster team to reduce instance renting costs by approximately 60\% over longer periods of usage. The framework also deals with the caveat of losing access to the machine due to the current spot price becoming lower than the maximum bid. However, the solution of simply rerunning the failed job on an on-demand instance might not be ideal in the context of long-running services or tasks.
 
 \subsection{Elasticluster}
 
