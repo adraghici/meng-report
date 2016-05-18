@@ -225,7 +225,7 @@ Despite that tight coupling with specific components of the AWS ecosystem is und
 
 Elasticluster \cite{Elasticluster} is another open-source project aiming at simplifying managing clusters on cloud platforms. Although not as popular as StarCluster, it has similar goals and a focus on simplicity and is more generic by supporting all of Amazon EC2, Google Cloud and OpenStack. We do not intend to call from Scala the Python API that Elasticluster provides, so we will focus on the functionality provided by the command-line tool.
 
-Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, Slurm, Torque and PBS as scheduling systems installed by default in the cluster.
+Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems installed by default in the cluster.
 
 However, a disadvantage of Elasticluster is that it does not support the native storage systems for its supported cloud platform providers, since Amazon and Google cloud instances usually report much better performance when coupled with storage on the same platform. Instead, Elasticluster has default support for GlusterFS \cite{GlusterFS}, Ceph \cite{Ceph} and the OrangeFS \cite{OrangeFS} filesystem. Although these options are potentially performant, they suffer from not being as widely popular as the previously mentioned ones.
 
