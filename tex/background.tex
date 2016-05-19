@@ -225,11 +225,25 @@ Despite that tight coupling with specific components of the AWS ecosystem is und
 
 Elasticluster \cite{Elasticluster} is another open-source project aiming at simplifying managing clusters on cloud platforms. Although not as popular as StarCluster, it has similar goals and a focus on simplicity and is more generic by supporting all of Amazon EC2, Google Cloud and OpenStack. We do not intend to call from Scala the Python API that Elasticluster provides, so we will focus on the functionality provided by the command-line tool.
 
-Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems installed by default in the cluster.
+Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems. It uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Along with the division of nodes in a cluster in \textit{frontend nodes} and \textit{compute nodes}, the use of Ansible playbooks allows combining different setups for master and slave nodes. Modularity is achieved by creating the specification of the different blocks of the cluster independently (\textit{login}, \textit{cloud}, \textit{setup}, \textit{cluster}, \textit{storage}) and simply assembling them to deploy the instances.
 
-However, a disadvantage of Elasticluster is that it does not support the native storage systems for its supported cloud platform providers, since Amazon and Google cloud instances usually report much better performance when coupled with storage on the same platform. Instead, Elasticluster has default support for GlusterFS \cite{GlusterFS}, Ceph \cite{Ceph} and the OrangeFS \cite{OrangeFS} filesystem. Although these options are potentially performant, they suffer from not being as widely popular as the previously mentioned ones.
+Although not as feature-rich as StarCluster, Elasticluster offers the basic cluster management commands and some extra customisation options:
+\begin{itemize}
+	\item \verb|start| launches the cluster and automatically runs Ansible to configure it unless the user specifically requests not to.
+	\item \verb|stop| kills the cluster without checking whether it is currently in use, which makes the tool require extra precautions on behalf of the user when managing the lifecycle of the client application.
+	\item \verb|list-nodes| offers information about all nodes in a specific cluster.
+	\item \verb|setup| allows the user to efficiently reconfigure the cluster from scratch without having to restart it and wait for instances to be recreated. It simply runs Ansible with respect to playbooks that have been added or updated by the user.
+	\item \verb|ssh| and \verb|sftp| are used to obtain control of specific machines, upload and download files to and from the 
+cluster.
+	\item \verb|export| is used to save the local data about a cluster started from the current machine in a \verb|zip| file. A sensible but useful option is the ability to also store the local private and public \verb|ssh| keys to the file.
+	\item \verb|import| unzips and stores an exported cluster locally.
+\end{itemize}
 
-Elasticluster uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Similarly to StarCluster, it facilitates adding and removing nodes from the cluster, but does not provide the flexibility of dinamically controlling the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
+Although SGE is supported as in StarCluster, the main Ansible playbook we are interested is the one setting up SLURM, since it is the more popular, modern and actively maintained scheduling system. The SLURM playbook exports the \textit{/home} filesystem from the master node to all the slaves, ensuring shared storage. However, extra performance can be achieved by combining the SLURM playbook with the OrangeFS parallel virtual filesystem and mounting OrangeFS nodes as shared storage in the main cluster.
+
+A disadvantage of Elasticluster is that it does not support the native storage systems for its supported cloud platform providers, since Amazon and Google cloud instances usually report much better performance when coupled with storage on the same platform. Instead, Elasticluster has default support for GlusterFS \cite{GlusterFS}, Ceph \cite{Ceph} and the OrangeFS \cite{OrangeFS} filesystem. Although these options are performant, they suffer from not being as widely popular as the previously mentioned ones.
+
+Elasticluster facilitates adding and removing nodes from the cluster, but does not provide the flexibility of StarCluster in dinamically controlling the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
 
 \subsection{Apache Jclouds}
 
