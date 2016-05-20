@@ -245,6 +245,40 @@ A disadvantage of Elasticluster is that it does not support the native storage s
 
 Elasticluster facilitates adding and removing nodes from the cluster, but does not provide the flexibility of StarCluster in dinamically controlling the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
 
+\subsection{CfnCluster}
+
+CfnCluster is a cluster management tool built by Amazon specifically to support running high performance computing  clusters using the entire stack of cloud services provided by AWS. This command line tool is free and open-source on its own, but it delegates most of the logic for administering the cluster to paid AWS services such as Amazon SNS\footnote{Simple Notification Service} \cite{SNS}, SQS\footnote{Simple Queue System} \cite{SQS}, CloudWatch \cite{CloudWatch} and Auto Scaling \cite{AutoScaling}.
+
+The default installation is based on a provided AMI that ships with standard tools used for AWS administration. The configuration file allows extensive customisation and the possibility to enable various features needed for a job submission cluster:
+\begin{itemize}
+	\item A scheduler that can be any of SGE, SLURM, Torque and OpenLava\cite{OpenLava}.
+	\item Shared filesystem by mounting and EBS volume on all nodes at a user specified location. Read-write access to resourced owned by the user in S3 is also enabled.
+	\item Amazon Virtual Private Cloud (VPC) provisioning in order to operate a cluster whose networking layer is in complete control of the user and is in a logically isolated section of AWS.
+	\item Security groups for a cluster-level firewall.
+	\item Custom bootstrap actions that allow the user to run pre and post-startup configuration scripts on the master node.
+\end{itemize}
+
+Figure \ref{CfnNetworking} illustrates the sandboxing feature that isolates the master and compute nodes into subnets of the VPC.
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[scale=0.7]{CfnNetworking.png}
+	\caption{Master and slave nodes isolated in two different Virtual Private Clouds \cite{CfnVPC}.}
+	\label{CfnNetworking}
+\end{figure}
+
+Elasticity is achieved through the interplay of various Amazon cloud services. On cluster creation, a CloudWatch alarm monitoring the number of pending jobs is created. When the alarm is triggered due to many queued jobs, instances are added by the Amazon Auto Scaling service up to a maximum defined by the \verb|max_queue_size| config parameter. On the other hand, idle machines are identified using a \verb|nodewatcher| daemon that monitors load and signals the possibility to reduce the compute fleet size to a minimum of \verb|min_queue_size| instances. Figure \ref{CfnScaling} demonstrates the processes described above.
+
+CfnCluster is a production-ready and reliable tool. However, it is completely one-dimensional since it focuses entirely on Amazon software and incurs extra costs by using many other AWS services, which could have otherwise been implemented as features of the tool itself. Although the costs of the individual cloud services supporting CfnCluster is not high, the overall cost is higher. An estimate for the added cost introduced by ClowdWatch alarms only is \$3.50 per month per instance, compared to the \$18.72 per month for renting a \verb|t2.small| instance \cite{AWSPricing}. This implies an added cost of 19\% that can by avoided by instead using StarCluster or Elasticluster.
+
+\begin{figure}[H]
+	\centering
+		\subfloat[][Fleet size management.]{\includegraphics[width=0.7\linewidth]{CfnAutoScaling.png}}
+		\subfloat[][Node activity daemon.]{\includegraphics[width=0.3\linewidth]{CfnNodewatcher.png}}
+	\caption{Auto Scaling monitoring diagrams \cite{CfnProcesses}.}
+	\label{CfnScaling}
+\end{figure}
+
 \subsection{Apache Jclouds}
 
 Apache Jclouds \cite{jclouds} is an open-source Java library that unifies the cloud services APIs for most mainstream commercial and open-source cloud providers, providing a starting point for an implementation that would be concerned with more fine-grained control of cloud specific features.
@@ -318,8 +352,4 @@ blobStore.putBlob("test-container", blob);
 	\label{BlobStore}
 \end{figure}
 
-Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster or Starcluster.
-
-% \subsection{CfnCluster}
-
-% \subsection{CometCloud}
+Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster, Starcluster or CfnCluster.
