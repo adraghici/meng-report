@@ -196,7 +196,7 @@ By default, StarCluster provides a set of public AMIs that include a lightweight
 	\item NFS\footnote{Network FIle System} \cite{NFS} for sharing data between the instances in the cluster.
 	\item The SGE job queuing and scheduling system.
 	\item Security group setup for controlling the inbound and outbound traffic from the cluster.
-	\item Password-less \verb|ssh| between the nodes in the default security group.
+	\item Password-less SSH between the nodes in the default security group.
 	\item The possibility of attaching and mounting EBS drives to be used as NFS-shared storage by all the nodes in the cluster.
 \end{itemize}
 
@@ -206,9 +206,9 @@ StarCluster relies heavily on the assumption that users prefer sensible defaults
 \begin{itemize}
 	\item \verb|start| launches a cluster as per the specification provided in the configuration file. It allows for many different variations of cluster creation, where instances can also be simply started but not provisioned with the default software. The user can also simply perform a dry run and simply simulate starting the cluster to prevent unexpected issues in production.
 	\item \verb|terminate| completely purges the given cluster, shutting down all nodes and removing its previously security group. If the cluster is backed up by EBS volumes, the root volumes of each node can also be deleted.
-	\item \verb|sshmaster| and \verb|sshnode| allow for easy \verb|ssh| access to all nodes in the cluster relying on the AWS keypair provided in the configuration file for authentication. Slave nodes are automatically numbered in a human-readable format - \verb|node001|, \verb|node002|, etc.
+	\item \verb|sshmaster| and \verb|sshnode| allow for easy SSH access to all nodes in the cluster relying on the AWS keypair provided in the configuration file for authentication. Slave nodes are automatically numbered in a human-readable format - \verb|node001|, \verb|node002|, etc.
 	\item \verb|put| and \verb|get| enable transferring files between the user's local machine and a running cluster, where they are instantly shared via NFS.
-	\item \verb|createkey| is a useful for creating a new \verb|ssh| keypair and simultaneously both saving it locally and importing it to the user's AWS account.
+	\item \verb|createkey| is a useful for creating a new SSH keypair and simultaneously both saving it locally and importing it to the user's AWS account.
 	\item \verb|addnode| and \verb|removenode| allow for manual upscaling or downscaling by launching new nodes and attaching them as slaves to the cluster or tearing them down.
 	\item \verb|loadbalance| provides an automatic alternative for growing and shrinking the number of nodes in the cluster based on the load of jobs queued in SGE.
 \end{itemize}
@@ -235,7 +235,7 @@ Although not as feature-rich as StarCluster, Elasticluster offers the basic clus
 	\item \verb|setup| allows the user to efficiently reconfigure the cluster from scratch without having to restart it and wait for instances to be recreated. It simply runs Ansible with respect to playbooks that have been added or updated by the user.
 	\item \verb|ssh| and \verb|sftp| are used to obtain control of specific machines, upload and download files to and from the 
 cluster.
-	\item \verb|export| is used to save the local data about a cluster started from the current machine in a \verb|zip| file. A sensible but useful option is the ability to also store the local private and public \verb|ssh| keys to the file.
+	\item \verb|export| is used to save the local data about a cluster started from the current machine in a \verb|zip| file. A sensible but useful option is the ability to also store the local private and public SSH keys to the file.
 	\item \verb|import| unzips and stores an exported cluster locally.
 \end{itemize}
 
@@ -251,7 +251,74 @@ Apache Jclouds \cite{jclouds} is an open-source Java library that unifies the cl
 
 Although it requires more extensive configuration, it supports most commercial and open-source clouds (Amazon EC2, Google Cloud, Microsoft Azure, OpenStack, CloudStack), while not compromising highly provider-specific features. This is achieved by having highly flexible services for computation or advanced tasks like load balancing by using on-demand provisioning features of the clouds. For EC2, our main point of interest, Jclouds supports all type of storage provided by AWS, including EBS for low-latency services, S3 for low costs and Glacier for long-term storage.
 
-However, since it is not a stand-alone application, Jclouds would require us to implement a large part of the logic of tools like Elasticluster or Starcluster, making us lose some of the reliability of services tested for so long in production settings.
+Jclouds currently provides three main abstractions that facilitate writing code agnostic to particular cloud vendor APIs:
+\begin{itemize}
+	\item The \textit{ComputeService} layer unifies services providing computational power offered by different providers like Amazon EC2 or Google Compute Engine. The abstraction builds on top of the native APIs provided by the vendors and offers various features:
+	\begin{itemize}
+		\item The location aware API ensures that accessing resources placed in different geographic locations does not require maintaining multiple connections and managing multiple access objects. This permits a more clear organisation of code that oversees running virtual instances in multiple regions.
+		\item Basic cluster management support is offered by allowing the creation of groups of nodes instead of individual machines. Each group benefits from an automatically bootstrapped firewall that can be configured to regulate the traffic to the group as desired. Running scripts on all the machines in a group is also simplified through the existence of execution primitives and sensible exception types used to handle remote errors.
+		\item SSH key management for nodes launched using the API - specified SSH keys are copied to instances on startup.
+		\item Focus on testability - the library provides a stub compute service that mimics the behaviour of a remote execution environment for each provider, simplifying the task of writing tests for the top-level application.
+	\end{itemize}
+	\item The \textit{BlobStore} abstraction provides a portable way of accessing key-value stores such as Amazon S3, Google Cloud Storage or Microsoft Azure Blob Storage. Features are also location-aware and focus on unifying methods of accessing different types of storage:
+	\begin{itemize}
+		\item The \textit{filesystem} provider can be used to write data to memory, local disk or cloud blob storage using the same API.
+		\item The \textit{in-memory} provider allows testing without the need for real credentials by stubbing in the memory of the local machine for the remote storage.
+	\end{itemize}
+	\item The \textit{LoadBalancerService} abstraction is a beta feature that aims to distribute the workload among nodes created in groups.
+\end{itemize}
+
+Figure \ref{ComputeService} shows an example of using the \verb|ComputeService| abstraction. After the access object is built from the provider preference and credentials, launching the instance from the template configuring options such as the operating system, memory requirements or opening specific ports for external communication.
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}{11.5cm}
+		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
+ComputeService compute = ContextBuilder.newBuilder("aws-ec2")
+    .credentials("identity", "credential")
+    .buildView(ComputeServiceContext.class)
+    .getComputeService();
+
+Template template = compute.templateBuilder()
+    .osFamily(OsFamily.UBUNTU)
+    .minRam(2048)
+    .options(inboundPorts(22, 80))
+    .build();
+
+compute.createNodesInGroup("jclouds", 1, template);
+		\end{Verbatim}
+	\end{minipage}
+	\caption{Instantiating an Amazon EC2 instance using ComputeService \cite{jclouds}.}
+	\label{ComputeService}
+\end{figure}
+
+Obtaining the access object for a \verb|BlobStore| is similar. Uploading data to the blob requires first creating a container and is straightforward after input data is parsed.
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}{12.5cm}
+		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
+blobStore = ContextBuilder.newBuilder("aws-s3")
+             .credentials("identity", "credential")
+             .buildView(BlobStoreContext.class)
+             .getBlobStore();
+
+blobStore.createContainerInLocation(null, "test-container");
+
+ByteSource payload = ByteSource.wrap("test-data".getBytes(UTF_8));
+blob = blobStore.blobBuilder("test")
+    .payload(payload)
+    .contentLength(payload.size())
+    .build();
+
+blobStore.putBlob("test-container", blob);
+		\end{Verbatim}
+	\end{minipage}
+	\caption{Uploading data to Amazon S3 using BlobStore \cite{jclouds}.}
+	\label{BlobStore}
+\end{figure}
+
+Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster or Starcluster.
 
 % \subsection{CfnCluster}
 
