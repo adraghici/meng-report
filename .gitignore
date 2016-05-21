@@ -158,3 +158,6 @@ TSWLatexianTemp*
 
 # Apple stuff
 .DS_Store
+
+# Mendeley
+MEngProject.bib
