@@ -179,14 +179,6 @@ Throughout the investigation, we focus on the features relevant to managing clou
 	\item Allows for effective automation in a concise manner by providing a clear and robust command line interface or API.
 \end{itemize}
 
-% \subsection{Mesos}
-
-%\subsubsection{Mesosphere}
-
-% \subsubsection{Marathon}
-
-% \subsubsection{Chronos}
-
 \subsection{StarCluster}
 
 StarCluster \cite{StarCluster} is an open-source cluster management tool that has been successfully used in both open-source and commercial products. It comes as a command line tool that specifically targets cluster deployment on Amazon EC2 and provides flexible high-level configuration options.
@@ -353,3 +345,66 @@ blobStore.putBlob("test-container", blob);
 \end{figure}
 
 Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster, Starcluster or CfnCluster.
+
+\subsection{Mesos}
+
+Mesos \cite{Mesos} is an open-source cluster management system that provides abstractions of resources like processing power, memory or storage gathered from individual machines. Its aim is to offer a platform for creating safe, scalable and fault-tolerant distributed systems while programming against a simple API that allows treating an entire fleet of cloud instances as a shared supply of resources.
+
+Mesos can be described as a kernel for distributed systems. Its architecture is similar to the one of the Linux kernel, but revolves around working with distributed resources. Applications that take advantage of the APIs exposed by Mesos are known as frameworks and common examples include platforms for batch job scheduling, processing big data, managing data storage or hosting long-running jobs such as web servers. Figure \ref{MesosArch} shows the how Mesos mediates the access of high-level frameworks to fragmented low-level resources.
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[width=1\linewidth]{MesosArch.png}
+	\caption{Mesos architecture \cite{MesosArch}.}
+	\label{MesosArch}
+\end{figure}
+
+The key advertising points for Mesos are its scalability tested in commercial applications to up to 10.000 nodes and its layered architecture that supersedes classic resource scheduling and distribution systems that maintain the whole state of the underlying infrastructure. Instead, Mesos completely handles resource unification and only requires blocks on top of it to deal with primitives such as resource offers and describing tasks that need to be executed on slave nodes in a cluster.
+
+\subsubsection{Chronos}
+
+Chronos \cite{Chronos} is a job scheduler that aims to be a modern redesign of the classic Unix utility Cron \cite{Cron}. Although Cron is mainly intended for performing single repetitive tasks and is typically used for scheduling system administration and maintenance tasks at regular time intervals, Chronos expands the feature space by also supporting job execution chains where jobs are triggered by finalisation of their dependencies. 
+
+Chronos is built as a framework on top of Mesos and it benefits from the fault tolerance and scalability provided by the underlying distributed kernel and resources.
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[width=0.9\linewidth]{ChronosArch.png}
+	\caption{Chronos architecture \cite{ChronosArch}.}
+	\label{ChronosArch}
+\end{figure}
+
+Figure \ref{ChronosArch} shows how Chronos fits in a system where it communicates with the Mesos master to allocate resources, which are then used to execute designated jobs. In the case when a Mesos cluster is deployed on AWS, the tasks leverage highly segregated compute power to perform big data processing using Elastic MapReduce \cite{EMR} and storage backed up by S3.
+
+Chronos can aggregate statistics regarding the status of scheduled jobs batches, as well as details on individual executions. It also provides a web dashboard that can be used to manage jobs interactively, but our interest lies along the REST API for automation purposes. The simplest way to deploy and configure Chronos along with Mesos is by using Mesosphere DC/OS \footnote{Datacenter Operating System} \cite{DCOS}.
+
+\subsubsection{Mesosphere DC/OS}
+
+Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure shows the analogy between this setup and operating systems running on the Linux kernel.
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[width=0.9\linewidth]{DCOSArch.png}
+	\caption{Mesosphere DC/OS architecture \cite{DCOS}.}
+	\label{DCOSArch}
+\end{figure}
+
+DC/OS comes with out-of-the-box support for configuring clusters relying on instances provisioned from AWS and Microsoft Azure. By having DC/OS install Chronos, we can start executing jobs remotely using AWS resources. The community edition of the product is fully open-source and free to be used for non-enterprise purposes. However, for our use case this solution suffers from the same problem as CfnCluster, namely the extra cost induced by delegating all the elastic scaling work to services like Amazon Auto Scaling. 
+
+Although DC/OS would not add extra costs directly, it does require more powerful bootstrap, master and agent nodes than either of Elasticluster, Starcluster or CfnCluster. Table \ref{DCOSPricing} shows the hourly price of operating an Amazon EC2 cluster with the minimum required specifications. In comparison, the cost of a \verb|t2.small|| instance that can be used as both a master and compute node in a Starcluster or Elasticluster installation with EBS volumes mounted for shared storage is \$0.026 per hour. This leads to a 10x cost increase only for operating a single master node and ignoring the fact that DC/OS in fact recommends running 3 simultaneous master nodes for optimal performance.
+
+\begin{table}[]
+\centering
+\begin{tabular}{ccc}
+\textbf{Node role} & \textbf{Required instance} & \textbf{Price (\$ per hour)} \\ \hline
+\multicolumn{1}{|c|}{Bootstrap} & \multicolumn{1}{c|}{m3.2xlarge} & \multicolumn{1}{c|}{0.532} \\ \hline
+\multicolumn{1}{|c|}{Master} & \multicolumn{1}{c|}{m3.xlarge} & \multicolumn{1}{c|}{0.266} \\ \hline
+\multicolumn{1}{|c|}{Agent} & \multicolumn{1}{c|}{r3.large} & \multicolumn{1}{c|}{0.166} \\ \hline
+ & \multicolumn{1}{c|}{} & \multicolumn{1}{c|}{0.964} \\ \cline{3-3} 
+ &  & Total
+\end{tabular}
+\caption{Prices of EC2 nodes with DC/OS minimum performance requirements \cite{DCOSReq, AWSPricing}.}
+\label{DCOSPricing}
+\end{table}
+
+In conclusion DC/OS is a highly reliable tool for operating clusters in the cloud, but from cost-effectiveness perspective its features only shine when used at massive scale. In our use case, where jobs are more numerous rather than particularly CPU-intensive, Starcluster and Elasticluster are better candidates and can produce similar results for a lower investment.
