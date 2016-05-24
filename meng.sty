@@ -3,6 +3,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{afterpage}
 % Figures
 \usepackage{graphicx}
 % URLs
@@ -56,6 +57,7 @@
 \rfoot{}
 \renewcommand{\headrulewidth}{0.05pt}
 \renewcommand{\chaptermark}[1]{\markboth{\chaptername\ \thechapter.\ \itshape #1}{}}
+\newcommand\blankpage{\null\thispagestyle{empty}\newpage}
 
 % Paragraph and list spacing
 \setlength{\parindent}{0cm}
