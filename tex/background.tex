@@ -43,7 +43,7 @@ Chronologically, scientific workflow systems have emerged from the bioinformatic
 	\item A collaboration platform, where users can interact and share workflows.
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.30]{OpenMOLEGUI.png}
 	\caption{OpenMOLE graphical workflow \cite{Reuillon2012}.}
@@ -69,21 +69,20 @@ Despite its maturity, Taverna does not, on its own, have built-in support for au
 
 Galaxy \cite{Goecks2010} is another community specific web-based platforms for managing workflows, focussing on genomic research. Conceptually, it is driven by the motivation to ensure accessibility of computational resources by providing researchers with simple web interfaces to interact with distributed environments, reproducibility of experiments by tagging and recording order and intent of each action users take, as well as transparency of findings by consolidating a robust collaboration framework.
 
-CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}. Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage can be explicitly turned on from the CloudMan Console.
+CloudMan \cite{Afgan2010} is the cloud resource management tool used by Galaxy to instantiate pre-packaged clusters on Amazon EC2 machines. To achieve this, the user needs to use the AWS Management Console to request from an instance that will be used as the master node of a new SGE cluster. Next, the number of slave instances in the cluster can be adjusted using the CloudMan Console, as shown in Figure \ref{CloudManConsole}.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
-		\includegraphics[scale=0.40]{CloudManConsole.png}
+		\includegraphics[scale=0.37]{CloudManConsole.png}
 	\caption{CloudMan cluster management console \cite{Afgan2010}.}
 	\label{CloudManConsole}
 \end{figure}
 
-CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination. This is a problem in the context of EC2 or other commercial clouds, since it means that the user might continue to be charged for resources that are no longer being used.
+Since EC2 instances do not save data on disk by default, persistence on Amazon Elastic Block Storage can be explicitly turned on from the CloudMan Console. CloudMan also deals with cases when the initial capacity of an EBS volume attached to the master instance is exceeded by safely pausing activity in the cluster before reattaching a new expanded capacity volume and resuming work. However, the job submission system still does not achieve full automation, since it requires a human to manually turn on the master node in the cluster, as opposed to the system being brought up on the fly and turned off on workflow termination. This is a problem in the context of EC2 or other commercial clouds, since it means that the user might continue to be charged for resources that are no longer being used.
 
 One major advantage of CloudMan is its modular architecture, under which instances only use a lightweight AMI and reference the tools they need from external storage such as EBS, as shown in Figure \ref{CloudManArch}. This grants further flexibility in terms of updating the system, because the AMI does not need to be repackaged frequently and the state of machines can be modified by simply writing on persistent storage.
 
-\vspace{5mm}
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.35]{CloudManArch.png}
 	\caption{CloudMan modular architecture \cite{Afgan2010}.}
@@ -96,6 +95,13 @@ Tavaxy \cite{Abouelhoda2012} was created from the desire to ease the sharing of 
 
 Tavaxy focuses on efficiently and transparently delegating workload to grid and cloud platforms. It can run a cluster when it is provided with a distributed file system similar to NFS and a standard job scheduler like SGE. The preferred cloud platform is Amazon EC2 and provisioning extra resources is done via a simple web interface, operated similarly as for Taverna and Galaxy.
 
+\begin{figure}[h]
+	\centering
+		\includegraphics[scale=0.25]{TavaxyArch.png}
+	\caption{Tavaxy interaction between a local machine and Amazon EC2 \cite{Abouelhoda2012}.}
+	\label{TavaxyArch}
+\end{figure}
+
 Three different modes are available for delegating computation to EC2:
 
 \begin{itemize}
@@ -103,14 +109,6 @@ Three different modes are available for delegating computation to EC2:
 	\item \textit{Sub-workflow execution}, which presumes a local installation and Tavaxy used for workflow design and allows the user to create a cluster in the cloud from a more lightweight AMI wrapping the runtime environment. The local machine sends the workflows remotely for execution and waits for results of the run. The user has two options for transmitting the input data and persisting the results. The first option is to send Inputs along with the workflow definition to master node machine and save outputs manually to local storage. The alternative is to upload input data to S3 and configure the cluster to direct reads and writes to S3 directly. The general architecture for this mode of operation can be observed in Figure \ref{TavaxyArch}.
 	\item \textit{Single task instantiation}, which is similar to sub-workflow execution, except that only a task in the workflow is delegated to the cloud.
 \end{itemize}
-
-\vspace{5mm}
-\begin{figure}[H]
-	\centering
-		\includegraphics[scale=0.25]{TavaxyArch.png}
-	\caption{Tavaxy interaction between a local machine and Amazon EC2 \cite{Abouelhoda2012}.}
-	\label{TavaxyArch}
-\end{figure}
 
 \subsection{Kepler}
 
@@ -143,16 +141,14 @@ Pegasus performs most of its important optimisations at the mapping stage, since
 	\item \textit{Job clustering}. For many short-lived jobs, orchestrating the transfer of task results across machines in a cluster and long queueing times can incur high latency costs. Grouping related tasks into larger entities helps alleviate this problem by reducing the load on the machine that hosts the job submission system. This strategy also improves the overall performance of workflows with a large number of tasks by over 90\%, as previous studies have shown \cite{Deelman2010, Singh2008}. \textit{Level-based horizontal clustering} (Figure \ref{HorizontalClustering}) and \textit{label-based clustering} (Figure \ref{LabelClustering}) are some of the most effective strategies, although the latter requires users to explicitly label tasks when defining the workflow \cite{Deelman2013}.
 \end{itemize}
 	
-\vspace{5mm}
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.23]{HorizontalClustering.png}
 	\caption{Level-based horizontal clustering targeting parallelisable tasks \cite{Deelman2013}.}
 	\label{HorizontalClustering}
 \end{figure}
 
-\vspace{6mm}
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.23]{LabelClustering.png}
 	\caption{Label-based clustering \cite{Deelman2013}.}
@@ -164,8 +160,6 @@ Although all the optimisations and design ideas discussed above apply to all dis
 However, further development of workflow management systems is needed in order to fully exploit cloud features such as automatic scaling of available resources. The main problem is that the load of instances occurs in the case of long-running jobs. Indeed, upscaling usually leaves unused extra resources, while downscaling is even more challenging because long individual tasks cannot be split up any further. Basic solutions involve only allowing automatic scaling on idle instances or when having many short-lived jobs, but this is definitely an area open to future work.
 
 Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
-
-% \subsection{SWF}
 
 \section{Cluster Deployment on Clouds}
 
@@ -252,7 +246,7 @@ The default installation is based on a provided AMI that ships with standard too
 
 Figure \ref{CfnNetworking} illustrates the sandboxing feature that isolates the master and compute nodes into subnets of the VPC.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[scale=0.7]{CfnNetworking.png}
 	\caption{Master and slave nodes isolated in two different Virtual Private Clouds \cite{CfnVPC}.}
@@ -263,7 +257,7 @@ Elasticity is achieved through the interplay of various Amazon cloud services. O
 
 CfnCluster is a production-ready and reliable tool. However, it is completely one-dimensional since it focuses entirely on Amazon software and incurs extra costs by using many other AWS services, which could have otherwise been implemented as features of the tool itself. Although the costs of the individual cloud services supporting CfnCluster is not high, the overall cost is higher. An estimate for the added cost introduced by ClowdWatch alarms only is \$3.50 per month per instance, compared to the \$18.72 per month for renting a \verb|t2.small| instance \cite{AWSPricing}. This implies an added cost of 19\% that can by avoided by instead using StarCluster or Elasticluster.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\subfloat[][Fleet size management.]{\includegraphics[width=0.7\linewidth]{CfnAutoScaling.png}}
 		\subfloat[][Node activity daemon.]{\includegraphics[width=0.3\linewidth]{CfnNodewatcher.png}}
@@ -296,7 +290,7 @@ Jclouds currently provides three main abstractions that facilitate writing code 
 
 Figure \ref{ComputeService} shows an example of using the \verb|ComputeService| abstraction. After the access object is built from the provider preference and credentials, launching the instance from the template configuring options such as the operating system, memory requirements or opening specific ports for external communication.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 	\begin{minipage}{11.5cm}
 		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
@@ -320,7 +314,7 @@ compute.createNodesInGroup("jclouds", 1, template);
 
 Obtaining the access object for a \verb|BlobStore| is similar. Uploading data to the blob requires first creating a container and is straightforward after input data is parsed.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 	\begin{minipage}{12.5cm}
 		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
@@ -352,7 +346,7 @@ Mesos \cite{Mesos} is an open-source cluster management system that provides abs
 
 Mesos can be described as a kernel for distributed systems. Its architecture is similar to the one of the Linux kernel, but revolves around working with distributed resources. Applications that take advantage of the APIs exposed by Mesos are known as frameworks and common examples include platforms for batch job scheduling, processing big data, managing data storage or hosting long-running jobs such as web servers. Figure \ref{MesosArch} shows the how Mesos mediates the access of high-level frameworks to fragmented low-level resources.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[width=1\linewidth]{MesosArch.png}
 	\caption{Mesos architecture \cite{MesosArch}.}
@@ -367,7 +361,7 @@ Chronos \cite{Chronos} is a job scheduler that aims to be a modern redesign of t
 
 Chronos is built as a framework on top of Mesos and it benefits from the fault tolerance and scalability provided by the underlying distributed kernel and resources.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[width=0.9\linewidth]{ChronosArch.png}
 	\caption{Chronos architecture \cite{ChronosArch}.}
@@ -382,7 +376,7 @@ Chronos can aggregate statistics regarding the status of scheduled jobs batches,
 
 Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure shows the analogy between this setup and operating systems running on the Linux kernel.
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 		\includegraphics[width=0.9\linewidth]{DCOSArch.png}
 	\caption{Mesosphere DC/OS architecture \cite{DCOS}.}
@@ -391,9 +385,9 @@ Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and
 
 DC/OS comes with out-of-the-box support for configuring clusters relying on instances provisioned from AWS and Microsoft Azure. By having DC/OS install Chronos, we can start executing jobs remotely using AWS resources. The community edition of the product is fully open-source and free to be used for non-enterprise purposes. However, for our use case this solution suffers from the same problem as CfnCluster, namely the extra cost induced by delegating all the elastic scaling work to services like Amazon Auto Scaling. 
 
-Although DC/OS would not add extra costs directly, it does require more powerful bootstrap, master and agent nodes than either of Elasticluster, Starcluster or CfnCluster. Table \ref{DCOSPricing} shows the hourly price of operating an Amazon EC2 cluster with the minimum required specifications. In comparison, the cost of a \verb|t2.small|| instance that can be used as both a master and compute node in a Starcluster or Elasticluster installation with EBS volumes mounted for shared storage is \$0.026 per hour. This leads to a 10x cost increase only for operating a single master node and ignoring the fact that DC/OS in fact recommends running 3 simultaneous master nodes for optimal performance.
+Although DC/OS would not add extra costs directly, it does require more powerful bootstrap, master and agent nodes than either of Elasticluster, Starcluster or CfnCluster. Table \ref{DCOSPricing} shows the hourly price of operating an Amazon EC2 cluster with the minimum required specifications. In comparison, the cost of a \verb|t2.small|| instance that can be used as both a master and compute node in a Starcluster or Elasticluster installation with EBS volumes mounted for shared storage is \$0.026 per hour. This leads to a 10x cost increase only for operating a single master node and ignoring the fact that DC/OS in fact recommends running 3 simultaneous master nodes for optimal performance\footnote{All prices are quoted as per May 2016}.
 
-\begin{table}[]
+\begin{table}[h]
 \centering
 \begin{tabular}{ccc}
 \textbf{Node role} & \textbf{Required instance} & \textbf{Price (\$ per hour)} \\ \hline

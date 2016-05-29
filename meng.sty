@@ -22,6 +22,7 @@
 \usepackage{paralist}
 \usepackage{enumitem}
 \usepackage{color}
+\usepackage{titlesec}
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{subfig}
 % Todo notes
@@ -36,7 +37,7 @@
 % Putting the footnote at the bottom
 \usepackage[bottom]{footmisc}
 % Page setup
-\usepackage[left=3cm,right=3cm, top=3cm]{geometry}
+\usepackage[width=15cm, top=3.75cm, bottom=3.75cm]{geometry}
 
 % Date and time
 \usepackage{datetime}
@@ -61,7 +62,10 @@
 % Paragraph and list spacing
 \setlength{\parindent}{0cm}
 \setlength{\parskip}{0.46cm}
-\setlist[itemize]{parsep=0.22cm}
+\setlength{\intextsep}{15pt}
+\setlength{\belowcaptionskip}{-5pt}
+\renewcommand{\baselinestretch}{1.25}
+\setlist[itemize]{parsep=0.2cm, topsep=-5pt}
 
 % Figure caption setup
 \captionsetup{labelfont=bf}
@@ -74,3 +78,13 @@
 
 % Root paths
 \graphicspath{{img/}}
+
+% Reverse default margins for twoside
+\let\tempmargin\oddsidemargin
+\let\oddsidemargin\evensidemargin
+\let\evensidemargin\tempmargin
+
+% Spacing before chapters
+\titleformat{\chapter}[display]   
+{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}   
+\titlespacing*{\chapter}{0pt}{-10pt}{40pt}
