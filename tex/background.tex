@@ -288,12 +288,12 @@ Jclouds currently provides three main abstractions that facilitate writing code 
 	\item The \textit{LoadBalancerService} abstraction is a beta feature that aims to distribute the workload among nodes created in groups.
 \end{itemize}
 
-Figure \ref{ComputeService} shows an example of using the \verb|ComputeService| abstraction. After the access object is built from the provider preference and credentials, launching the instance from the template configuring options such as the operating system, memory requirements or opening specific ports for external communication.
+Listing \ref{ComputeService} shows an example of using the \verb|ComputeService| abstraction. After the access object is built from the provider preference and credentials, launching the instance from the template configuring options such as the operating system, memory requirements or opening specific ports for external communication.
 
-\begin{figure}[h]
+\begin{listing}[h]
 	\centering
-	\begin{minipage}{11.5cm}
-		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
+	\begin{minipage}{11.6cm}		
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
 ComputeService compute = ContextBuilder.newBuilder("aws-ec2")
     .credentials("identity", "credential")
     .buildView(ComputeServiceContext.class)
@@ -306,18 +306,18 @@ Template template = compute.templateBuilder()
     .build();
 
 compute.createNodesInGroup("jclouds", 1, template);
-		\end{Verbatim}
+		\end{minted}
 	\end{minipage}
 	\caption{Instantiating an Amazon EC2 instance using ComputeService \cite{jclouds}.}
 	\label{ComputeService}
-\end{figure}
+\end{listing}
 
 Obtaining the access object for a \verb|BlobStore| is similar. Uploading data to the blob requires first creating a container and is straightforward after input data is parsed.
 
-\begin{figure}[h]
+\begin{listing}[h]
 	\centering
 	\begin{minipage}{12.5cm}
-		\begin{Verbatim}[fontsize=\small, numbers=left, frame=single]
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
 blobStore = ContextBuilder.newBuilder("aws-s3")
              .credentials("identity", "credential")
              .buildView(BlobStoreContext.class)
@@ -332,11 +332,12 @@ blob = blobStore.blobBuilder("test")
     .build();
 
 blobStore.putBlob("test-container", blob);
-		\end{Verbatim}
+		\end{minted}
 	\end{minipage}
 	\caption{Uploading data to Amazon S3 using BlobStore \cite{jclouds}.}
 	\label{BlobStore}
-\end{figure}
+\end{listing}
+
 
 Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster, Starcluster or CfnCluster.
 

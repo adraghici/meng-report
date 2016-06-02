@@ -1,6 +1,6 @@
 \chapter{Introduction}
 
-Scientists have spent decades building intricate mathematical models for systems and phenomena observed in all areas of life sciences. Such models have greatly expanded our understanding of the complex systems they describe, but the dramatic developments in technology and increase in widely available computational power in recent years have exposed another direction in which current research methodologies can progress.
+Scientists have spent decades building intricate mathematical models for systems and phenomena observed in all areas of life sciences. Such models have greatly expanded our understanding of the complex systems they describe, but the dramatic developments in technology and the increase in widely available computational power in recent years have exposed another direction in which current research methodologies can progress.
 
 Simulation in high performance computing environments is today the main approach used to validate scientific models in application domains ranging from astronomy to biomedical or earthquake science. Analytical solutions are often impossible to obtain, given the non-linear nature of these systems, so empirical observations drawn from running them in virtual settings is the only sensible option for further tuning and optimisation.
 
@@ -26,7 +26,7 @@ OpenMOLE \cite{Reuillon2013} is a scientific workflow engine that leverages the 
 	\item It focuses on hiding the complexity and heterogenity of hardware and software infrastructure that grids and clusters provide, separating the workflow definition from the underlying execution environment \cite{Reuillon2010}.
 	\item By following a zero-deployment approach, it does not need any guarantees regarding the configuration of its runtime environment. It integrates a standalone packaging system, CARE \cite{Janin2014}, and it ensures reliable execution on remote hosts automatically by copying necessary resources on demand \cite{Reuillon2015}.
 	\item It treats input models as black-boxes, allowing for interchangeable definitions in diverse languages or even packaged binaries \cite{Reuillon2013}. This means that already existing applications are not limited by a pre-configured toolbox and run as expected by default.
-	\item The focus on flexible design and scalability generated control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. This makes workflows reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
+	\item The focus on flexible design and scalability generates control flow structures inexistent in most rival platforms. Some of these include loops, conditional branching, or the ability to include whole workflows as subtasks \cite{Reuillon2013}. This makes workflows themselves reusable components that can be published and distributed on the OpenMOLE marketplace \cite{OpenMOLEMarketplace}.
 	\item The DSL\footnote{Domain Specific Language} it uses to create workflows is an extension of the Scala \cite{Scala} programming language. This allows for type-safe job definitions and enables OpenMOLE to catch configuration errors earlier than other systems that rely on plain text descriptions.
 \end{itemize}
 
@@ -35,7 +35,7 @@ Options that OpenMOLE currently offers to run workflows include:
 \begin{itemize}
 	\item Multithreading on a local machine.
 	\item SSH connections to remote servers.
-	\item Grids, such as EGI (European Grid Infrastructure) \cite{EGI}.
+	\item Grids, such as EGI\footnote{European Grid Infrastructure} \cite{EGI}.
 	\item Clusters managed by a wide range of software, including PBS\footnote{Portable Batch System} \cite{PBS}, Torque \cite{Torque}, SGE\footnote{Sun Grid Engine} \cite{SGE}, SLURM \cite{SLURM}, HTCondor \cite{HTCondor}, or OAR \cite{OAR}.
 \end{itemize}
 
