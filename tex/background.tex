@@ -241,7 +241,7 @@ CfnCluster is a cluster management tool built by Amazon specifically to support 
 The default installation is based on a provided AMI that ships with standard tools used for AWS administration. The configuration file allows extensive customisation and the possibility to enable various features needed for a job submission cluster:
 \begin{itemize}
 	\item A scheduler that can be any of SGE, Slurm, Torque and OpenLava\cite{OpenLava}.
-	\item Shared filesystem by mounting and EBS volume on all nodes at a user specified location. Read-write access to resourced owned by the user in S3 is also enabled.
+	\item Shared filesystem by mounting an EBS volume on all nodes at a user specified location. Read-write access to resourced owned by the user in S3 is also enabled.
 	\item Amazon Virtual Private Cloud (VPC) provisioning in order to operate a cluster whose networking layer is in complete control of the user and is in a logically isolated section of AWS.
 	\item Security groups for a cluster-level firewall.
 	\item Custom bootstrap actions that allow the user to run pre and post-startup configuration scripts on the master node.
@@ -256,7 +256,7 @@ Figure \ref{CfnNetworking} illustrates the sandboxing feature that isolates the 
 	\label{CfnNetworking}
 \end{figure}
 
-Elasticity is achieved through the interplay of various Amazon cloud services. On cluster creation, a CloudWatch alarm monitoring the number of pending jobs is created. When the alarm is triggered due to many queued jobs, instances are added by the Amazon Auto Scaling service up to a maximum defined by the \verb|max_queue_size| config parameter. On the other hand, idle machines are identified using a \verb|nodewatcher| daemon that monitors load and signals the possibility to reduce the compute fleet size to a minimum of \verb|min_queue_size| instances. Figure \ref{CfnScaling} demonstrates the processes described above.
+Elasticity is achieved through the interplay of various Amazon cloud services. On cluster creation, a CloudWatch alarm monitoring the number of pending jobs is created. When the alarm is triggered due to many queued jobs, instances are added by the Amazon Auto Scaling service up to a maximum defined by the \verb|max_queue_size| configuration parameter. On the other hand, idle machines are identified using a \verb|nodewatcher| daemon that monitors load and signals the possibility to reduce the compute fleet size to a minimum of \verb|min_queue_size| instances. Figure \ref{CfnScaling} demonstrates the processes described above.
 
 CfnCluster is a production-ready and reliable tool. However, it is completely one-dimensional since it focuses entirely on Amazon software and incurs extra costs by using many other AWS services, which could have otherwise been implemented as features of the tool itself. Although the costs of the individual cloud services supporting CfnCluster is not high, the overall cost is higher. An estimate for the added cost introduced by ClowdWatch alarms only is \$3.50 per month per instance, compared to the \$18.72 per month for renting a \verb|t2.small| instance \cite{AWSPricing}. This implies an added cost of 19\% that can by avoided by instead using StarCluster or Elasticluster.
 
