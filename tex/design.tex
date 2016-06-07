@@ -29,7 +29,7 @@ In this context, the user is not concerned with how the execution environment is
 
 The structural layers fulfil completely different roles and are modular blocks with clearly defined roles:
 \begin{itemize}
-	\item The scientific layer relies on the DS. It is where the user defines the workflow and specifies data sources and execution environments.
+	\item The scientific layer relies on the DSL. It is where the user defines the workflow and specifies data sources and execution environments.
 	\item The software layer is concerned with the translation of the workflow specification to an internal representation consisting of runnable jobs and their dependencies. It uses the Scala actor model \cite{ScalaActors} to coordinate the whole process of installing the OpenMOLE runtime on each remote execution site, continuously monitoring the status of outstanding jobs, or feeding results of completed tasks to the subsequent ones using them as input. New remote environments are simply added as plugins and they are essentially adapters to the resources exposed by the service layer.
 	\item The GridScale library is the service layer, presented in Section \ref{GridScaleSection}.
 \end{itemize}
@@ -186,13 +186,234 @@ Once finished, jobs upload their results to the storage system. Meanwhile, the O
 
 \subsection{CARE} \label{CARESection}
 
+Resolution of dependencies is a classical problem in the context of job distribution to remote environments, especially in the case of having little to no control over their configuration. Compiled binaries like C++ applications require shared libraries at runtime, while interpreted languages depend on various packages to be present on the execution node. 
+
+Users of grids and clusters do not usually have access to install the needed dependencies. Grids are particularly tricky, since they represent shared pools of heterogeneous resources that are likely to be configured and deployed differently than on a local machine that a workflow is initially tested on \cite{Leclaire2016}.
+
+The first partial solutions were application specific and not always feasible. For example, C++ programs can be built as static binaries that package all the dependencies, but this is a problem in the case of applications using proprietary libraries without publicly available source code.
+
+A practice that has recently gained traction in software engineering communities particularly via Docker \cite{Docker} is the use of containers. A container consists the entire software stack required to run an application, including dependencies as packages, binaries or configuration files. Containers accomplish a similar purpose to virtual machines, with the main advantage that they are designed to be lightweight. They are smaller in size than full-fledged virtual machine images, can be started faster and numerous instances can be hosted by a single operating system, making their deployment straightforward in comparison with the hypervisor configuration required to host virtual machines.
+
+However, the use of Docker containers also presumes the existence of the Docker engine on the target machine and this can not be ensured for environments over which scientists only have user access. This leads to the choice for CARE \cite{Janin2014}, an open-source application for reproducible executions that only relies on being run on a Linux platform. CARE works by intercepting all the requirements of an application during an initial run and repackaging all the dependencies in a self-extracting binary. 
+
+CARE also ensures full interoperability between packaging and execution environments, meaning that all modern Linux-based operating systems support running archives packaged under a different Linux distribution. This allows OpenMOLE to remotely distribute the application packaged on the user's machine without concerns about the particularities of Linux flavours present in a grid or cluster.
+
+More specifically, binaries are embedded in OpenMOLE via a \verb|CARETask|, which takes as parameters the location of the archive and the specific command that needs to be executed in the packaged runtime. OpenMOLE then runs the given command in the unpackaged directory on the remote node, copying the input files in the process as usual. Figure \ref{OpenMOLECARE} depicts the interplay between a CARE archive created by the user and the \verb|CARETask| in OpenMOLE. Listing \ref{CARETask} shows a sample task embedding a Python script.
+
 \begin{figure}[h]
 	\centering
-		\includegraphics[width=0.9\linewidth]{OpenMOLECARE.png}
+		\includegraphics[width=0.8\linewidth]{OpenMOLECARE.png}
 	\caption{Delegation of a task to remote execution environment in OpenMOLE. \cite{Leclaire2016}.}
 	\label{OpenMOLECARE}
 \end{figure}
 
-\subsection{Code Structure}
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{13cm}
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
+val output = Val[String]
+val error = Val[String]
+val value = Val[Int]
+
+val pythonTask = 
+  CARETask("hello.tgz.bin", "python hello.py /data/fileA.txt") set ( 
+    stdOut := output,
+    stdErr := error, 
+    returnValue := value, 
+    hostFiles += ("/home/user/fileA.txt", "/data/fileA.txt") 
+  )
+		\end{minted}
+	\end{minipage}
+	\caption{Example Python CARETask \cite{Leclaire2016}.}
+	\label{CARETask}
+\end{listing}
+
+\subsection{Code Design}
+
+Most of the logic of coordinating the execution of jobs and collection of results is handled by a \verb|JobManager| class. It uses a message queue to direct commands to separate actors responsible for uploading resources to execution nodes, submitting, querying or purging jobs, as in Listing \ref{JobManager}. The message queue is consumed iteratively by a unique dispatcher actor that routes messages to the specialised receiver actors.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{13.8cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1,fontsize=\footnotesize,linenos]{scala}
+class JobManager {
+  ...
+  def !(msg: JobMessage): Unit = msg match {
+    case msg: Upload             |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: Submit             |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: Refresh            |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: GetResult          |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: KillBatchJob       |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: DeleteFile         |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: CleanSerializedJob |$\Rightarrow$| messageQueue.enqueue(msg)
+    
+    case Manage(job) |$\Rightarrow$|
+      self ! Upload(job)
+      
+    case Delay(msg, delay) |$\Rightarrow$|
+      delayedExecutor.schedule(self ! msg, delay.toMillis, TimeUnit.MILLISECONDS)
+      
+    case Uploaded(job, sj) |$\Rightarrow$|
+      job.serializedJob = Some(sj)
+      self ! Submit(job, sj)
+      
+    case Submitted(job, sj, bj) |$\Rightarrow$|
+      val interval = job.environment.minUpdateInterval
+      job.batchJob = Some(bj)
+      self ! Delay(Refresh(job, sj, bj, interval), interval)
+      
+    case Kill(job) |$\Rightarrow$|
+      job.state = ExecutionState.KILLED
+      killAndClean(job)
+      
+    case Resubmit(job, storage) |$\Rightarrow$|
+      killAndClean(job)
+      job.state = ExecutionState.READY
+      messageQueue.enqueue(Upload(job))      
+    ...
+}
+		\end{minted}
+	\end{minipage}
+	\caption{Job lifecycle management.}
+	\label{JobManager}
+\end{listing}
+
+Remote execution environments are added through a plugin system by implementing the \verb|BatchEnvironment| trait. This comes with a built-in \verb|JobManager| and various other defaults useful for modelling a generic job submission environment. \verb|ClusterEnvironment| is wrapper that ensures steady traffic flow to a cluster by limiting the number of outgoing connections and adds an interface for accessing storage via SSH.
+
+Each concrete environment in OpenMOLE has a corresponding job service. The low-level mechanics of interacting with the scheduler and running individual jobs remotely are abstracted away in GridScale, so job services attached to environments decorate this behaviour with batch submission capabilities. Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs on the underlying GridScale level are also called job services, so we must always consider the distinction.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{14.2cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1.15,fontsize=\small,linenos]{scala}
+trait SGEJobService 
+    extends ClusterJobService with SSHHost with SharedStorage { self |$\Rightarrow$|
+
+  def environment: SGEEnvironment
+  val jobService = new GridScaleSGEJobService with SSHConnectionCache {...}
+
+  protected def _submit(serializedJob: SerializedJob) = {
+    val (remoteScript, result) = buildScript(serializedJob)
+    val jobDescription = new SGEJobDescription {
+      val executable = "/bin/bash"
+      val arguments = remoteScript
+      val workDirectory = serializedJob.path
+      override val queue = environment.queue
+      override val wallTime = environment.wallTime
+      override val memory = Some(environment.requiredMemory)
+    }
+    val jobId = self.jobService.submit(jobDescription)
+    ...
+  }
+}
+		\end{minted}
+	\end{minipage}
+	\caption{Job service used to submit batch jobs to the SGE scheduler.}
+	\label{SGEJobService}
+\end{listing}
 
 \section{GridScale} \label{GridScaleSection}
+
+GridScale is the library part of the OpenMOLE ecosystem that mediates the access to distributed computing environments. Being written in Scala, it can be used as part of any application running on the Java Virtual Machine and it is designed around the strict type system of the Scala programming language. This leads to improved safety checks for job definitions at compile time, since their members can now be more refined than plain strings \cite{Reuillon2016}.
+
+\subsection{Principles}
+
+Historically, the scientific community has relied on specifications developed by the OGF\footnote{Open Grid Forum} \cite{OGF} to establish the guidelines for libraries used to access grids or clusters. However, a problem that standards like DRMAA\footnote{Distributed Resource Management Application API} \cite{DRMAA} or SAGA\footnote{Simple API for Grid Applications} \cite{SAGA} encounter is that they require the commitment of multiple parties interacting with an environment. Users need to implement a particular protocol that matches the version of the specification deployed by the administrators of the infrastructure. Additionally, the API is often slow to evolve and inflexible to user requirements.
+
+GridScale chooses to stay away from particular standards and favours an approach where very few assumptions are made about the configuration of the target infrastructure. In particular, it only requires that the accessed environment runs a Linux distribution and the user has access to the \textit{bash} shell via SSH. This is reasonable to expect from most machines, since \textit{bash} is the default in most cases and a login shell is not needed. 
+
+Jobs are submitted and monitored using the standard command line tools that would be manually invoked by the user. For example, SGE jobs are managed using \verb|qsub|, \verb|qstat| and \verb|qdel|, while SLURM jobs are managed using \verb|sbatch|, \verb|scontrol| and \verb|scancel| for submission, state querying and termination, respectively.
+
+\subsection{Module Design}
+
+Each environment accessed by GridScale is serviced by its own module in the implementation. Modules are packaged as independent OSGi\footnote{Open Service Gateway Initiative} \cite{OSGi} bundles so that they can be included individually by applications servicing only a specific infrastructure. This enforces a modular design and reduces the footprint of the library \cite{Reuillon2016}.
+
+Every module corresponding to an environment consists of four different components wired together into a unique block using the cake pattern \cite{Cake}:
+
+\begin{itemize}
+	\item A \textit{Job Description} used to define the executable, arguments and other parameters for the job.
+	\item A \textit{Job Service} responsible for the job submission mechanisms and resource acquisition.
+	\item A \textit{Storage} component that can be shared across modules.
+	\item An \textit{Authentication} rule for granting access rights using a login and password combination, SSH or certificate authentication.
+\end{itemize}
+
+Figure \ref{GridScaleArch} illustrates the creation of a SLURM module from particular implementations of the four component interface. Although the underlying technique in the cake pattern is different, it achieves a similar result to standard dependency injection in languages like Java by offering modules easy to assemble.
+
+\begin{figure}[h]
+	\centering
+		\includegraphics[width=0.65\linewidth]{GridScaleArch.png}
+	\caption{GridScale architecture and instantiating the SLURM module \cite{Reuillon2016}.}
+	\label{GridScaleArch}
+\end{figure}
+
+\subsubsection{Job Description}
+
+Job descriptions are typesafe wrappers in Scala that translate to the plaintext scripts accepted by schedulers to queue jobs. The main advantage is that this ensures syntactical correctness of jobs and errors that would prevent jobs from being submitted are caught early. Silent issues such as misusing measurement unit for time or resources are also avoided by relying on a strong type system. 
+
+Listing \ref{SLURMJobDescription} compares the definition of a simple SLURM job using the standard approach in a text \verb|bash| script and its equivalent counterpart in GridScale. Note that, even for a relatively short description, the plaintext version can easily become ambiguous in sections where durations or paths are specified.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}[b]{5.03cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1.15,fontsize=\small]{bash}
+#!/bin/bash
+#SBATCH -o job.out
+#SBATCH -e job.err
+#SBATCH --cpus-per-task=1 
+#SBATCH --time=01:00:00
+#SBATCH -D /home/foo/bar
+
+/bin/echo success
+        \end{minted}
+	\end{minipage}
+	\hspace{0.5cm}
+    \begin{minipage}[b]{8.29cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1.15,fontsize=\small]{scala}
+val description = new SLURMJobDescription { 
+  def executable = "/bin/echo"
+  def arguments = "success"
+  def workDirectory = "/home/foo/bar"
+  override def wallTime = 1 hour
+}
+		\end{minted}
+		\captionof{figure}{Text-based SLURM job definition.}
+	\end{minipage}
+	\caption{Job service used to submit batch jobs to the SGE scheduler.}
+	\label{SLURMJobDescription}
+\end{listing}
+
+\subsubsection{Job Service}
+
+The job service is the component that manages the lifecycle of jobs. Listing \ref{SLURMJobService} shows the creation of a job service capable of interacting with SLURM. To connect to the remote environment, the service relies on the presence of a target host and login, along with a possibly password-protected SSH private key.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{14cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1.15,fontsize=\small,linenos]{scala}
+val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
+  def host = "host"
+  def user = "user"
+  def password = "password"
+  def privateKey = new File("/path/to/private/key")
+}
+		\end{minted}
+	\end{minipage}
+	\caption{Job service used to submit batch jobs to the SLURM scheduler.}
+	\label{SLURMJobService}
+\end{listing}
+
+The interface exposed by a job service consists of four main methods: \verb|submit|, \verb|state|, \verb|cancel| and \verb|purge|. These allow initiating jobs, checking their status, terminating them and cleaning up temporary data. 
+
+In contract with other libraries used for distributed resource management libraries that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
+
+\subsubsection{Storage}
+
+Storage wrappers abstract operations with files on the target environment. They are used by job services to set up the runtime by uploading files to remote machines and download results when jobs are done.
+
+Standard POSIX file operations are also enabled in order to complement the usage of command line tools to delegate work. The implementation of all the connections and commands relies on the SSHJ \cite{SSHJ} library, which handles SSH connections and provides the SFTP\footnote{Secure File Transfer Protocol} primitives directly to Java or Scala.
+
+\subsubsection{Authentication}
+
+The authentication component provides access to all environments covered by GridScale. Private clusters are managed by opening an SSH connection to the master node, so the authentication consists of the address of this machine, the name of the user and a password or private key.
+
+On the other hand, grids often require authentication methods that cover the security model of the middleware managing them. This is achieved in GridScale by allowing the installation of P12\footnote{PKCS - Public-Key Cryptography Standards} and PEM\footnote{Privacy Enhanced Mail} certificates \cite{Reuillon2016}.
