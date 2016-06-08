@@ -1,4 +1,4 @@
-\chapter{OpenMOLE \& GridScale}
+\chapter{OpenMOLE \& GridScale} \label{DesignChapter}
 
 The first part of this chapter expands on the goals, features, architecture and components of the open-source OpenMOLE project. We also explore use cases of the system by looking at a simple workflow. The second part of the chapter describes the structure and design of GridScale, the library OpenMOLE relies on to leverage distributed computing resources from grids and clusters.
 
@@ -228,9 +228,11 @@ val pythonTask =
 	\label{CARETask}
 \end{listing}
 
-\subsection{Code Design}
+\subsection{Job Management}
 
-Most of the logic of coordinating the execution of jobs and collection of results is handled by a \verb|JobManager| class. It uses a message queue to direct commands to separate actors responsible for uploading resources to execution nodes, submitting, querying or purging jobs, as in Listing \ref{JobManager}. The message queue is consumed iteratively by a unique dispatcher actor that routes messages to the specialised receiver actors.
+Most of the logic of coordinating the execution of jobs and collection of results is handled by a \verb|JobManager| class. It uses a message queue to direct commands to separate actors responsible for uploading resources to execution nodes, submitting, querying or purging jobs, as in Listing \ref{JobManager}. 
+
+The message queue is consumed iteratively by a unique dispatcher actor that routes messages to the specialised receiver actors. This model ensures a clear separation between individual actions carried out to monitor the jobs.
 
 \begin{listing}[h]
 	\centering
@@ -278,9 +280,11 @@ class JobManager {
 	\label{JobManager}
 \end{listing}
 
+\subsection{Environments}
+
 Remote execution environments are added through a plugin system by implementing the \verb|BatchEnvironment| trait. This comes with a built-in \verb|JobManager| and various other defaults useful for modelling a generic job submission environment. \verb|ClusterEnvironment| is wrapper that ensures steady traffic flow to a cluster by limiting the number of outgoing connections and adds an interface for accessing storage via SSH.
 
-Each concrete environment in OpenMOLE has a corresponding job service. The low-level mechanics of interacting with the scheduler and running individual jobs remotely are abstracted away in GridScale, so job services attached to environments decorate this behaviour with batch submission capabilities. Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs on the underlying GridScale level are also called job services, so we must always consider the distinction.
+Each concrete environment in OpenMOLE has a corresponding job service. The low-level mechanics of interacting with the scheduler and running individual jobs remotely are abstracted away in GridScale, so job services attached to environments decorate this behaviour with batch submission capabilities. 
 
 \begin{listing}[h]
 	\centering
@@ -311,6 +315,8 @@ trait SGEJobService
 	\caption{Job service used to submit batch jobs to the SGE scheduler.}
 	\label{SGEJobService}
 \end{listing}
+
+Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs on the underlying GridScale level are also called job services, so we must always consider the distinction. On line 8, a shell script embedding the task to be run is created from a serialized job. On line 11, the script is assigned to be run by \verb|bash| as part of an \verb|SGEJobDescription|. The job is then submitted to the underlying GridScale job service on line 17.
 
 \section{GridScale} \label{GridScaleSection}
 
