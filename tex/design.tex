@@ -68,7 +68,6 @@ Lines 6-10 define the actual model that we want to compute. In this case, the sp
 
 One of the central objectives of OpenMOLE is to allow parameter optimisation for the models it executes. The sampling of parameters is achieved through the use of \textit{explorations} in the language. Every parameter sampled from a set is combined with all the other parameters to generate the workflow input. In our case, the exploration at line 4 only samples parameter \verb|i|, so the model will be replicated 100 times and executed with an integer between 1 and 100 as input.
 
-
 Line 12 instantiates the environment where the workflow will be run. Here we select a \verb|LocalEnvironment| and allow the computation to create and use 8 threads on the local machine. Line 14 ties all the building blocks together. The exploration generates all possible values of \verb|i| and the model is executed on the given environment for each one of them. The \verb|-<| symbol represents a divergent transition between the exploration and the task, each output of the sampling being fed to the model.
 
 In OpenMOLE, \textit{hooks} are used to extract the results of running an experiment. They are executed every time the task that they are assigned to terminates and can perform actions like simply displaying the data or saving it to CSV\footnote{Comma-separated values} files. Here the \verb|ToStringHook| simply prints the output of each task.
