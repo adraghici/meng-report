@@ -139,7 +139,7 @@ exploration -< t1 -- t2 -- t3 >- aggregate
 
 Our initial example showed the simple case of running a workflow on the user's machine using a \verb|LocalEnvironment|. However, this is only usually done for testing locally before scaling the experiment and other types of environments are used for real experiments. Listing \ref{Environments} shows examples of instantiating SSH servers and cluster environments.
 
-The user can be authenticated either with a login and password combination, or via a private key. Here we define the authentication by specifying the path to the private key, the associated login and the remote machine's full address. The \verb|encrypted| parameter references a function that will prompt the user for the key's password in case it is protected.
+The user can be authenticated either with a login and password combination, or via a private key. Here we define the authentication by specifying the path to the private key, the associated login and the remote machine's full address. The \verb|encrypted| parameter references a function that will prompt the user for the key's password in case it is protected. This process is done once and for all and stores the new authentication in OpenMOLE's preferences folder. It is consequently rarely seen in actual workflow scripts that will reuse an already defined authentication.
 
 Environments are created by providing the shell login on the remote machine and its address. For the SSH server, we also specify the number of cores that can be used by the workflow. Cluster environments require that the target machine can act as the master of the cluster, being able to take commands for submitting and querying job status.
 
@@ -287,6 +287,8 @@ class JobManager {
 
 \subsection{Environments}
 
+\todo[inline]{Make it clear that it's one of the elements where you've interacted with for your project}
+
 Remote execution environments are added through a plugin system by implementing the \verb|BatchEnvironment| trait. This comes with a built-in \verb|JobManager| and various other defaults useful for modelling a generic job submission environment. \verb|ClusterEnvironment| is wrapper that ensures steady traffic flow to a cluster by limiting the number of outgoing connections and adds an interface for accessing storage via SSH.
 
 Each concrete environment in OpenMOLE has a corresponding job service. The low-level mechanics of interacting with the scheduler and running individual jobs remotely are abstracted away in GridScale, so job services attached to environments decorate this behaviour with batch submission capabilities. 
@@ -321,7 +323,7 @@ trait SGEJobService
 	\label{SGEJobService}
 \end{listing}
 
-Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs on the underlying GridScale level are also called job services, so we must always consider the distinction. On line 8, a shell script embedding the task to be run is created from a serialized job. On line 11, the script is assigned to be run by \verb|bash| as part of an \verb|SGEJobDescription|. The job is then submitted to the underlying GridScale job service on line 17.
+Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs at the underlying GridScale level are also called job services, so we must always consider the distinction. On line 8, a shell script embedding the task to be run is created from a serialized job. On line 11, the script is assigned to be run by \verb|bash| as part of an \verb|SGEJobDescription|. The job is then submitted to the underlying GridScale job service on line 17.
 
 \section{GridScale} \label{GridScaleSection}
 
@@ -349,6 +351,9 @@ Every module corresponding to an environment consists of four different componen
 \end{itemize}
 
 Figure \ref{GridScaleArch} illustrates the creation of a SLURM module from particular implementations of the four component interface. Although the underlying technique in the cake pattern is different, it achieves a similar result to standard dependency injection in languages like Java by offering modules easy to assemble.
+
+\todo[inline,color=cyan]{Figure \ref{GridScaleArch} is pretty ugly, I really wonder who has sketched it...}
+
 
 \begin{figure}[h]
 	\centering
@@ -394,6 +399,8 @@ val description = new SLURMJobDescription {
 	\label{SLURMJobDescription}
 \end{listing}
 
+\todo[inline,color=cyan]{Hey this is a smart way to lay it out! i'll reuse that}
+
 \vspace{3mm}
 \textbf{Job Service}
 \vspace{1mm}
@@ -418,7 +425,7 @@ val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
 
 The interface exposed by a job service consists of four main methods: \verb|submit|, \verb|state|, \verb|cancel| and \verb|purge|. These allow initiating jobs, checking their status, terminating them and cleaning up temporary data. 
 
-In contract with other libraries used for distributed resource management libraries that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
+In contrast with other libraries used for distributed resource management that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
 
 \vspace{3mm}
 \textbf{Storage}

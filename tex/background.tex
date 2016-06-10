@@ -161,7 +161,7 @@ However, further development of workflow management systems is needed in order t
 
 Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
 
-\section{Cluster Deployment on Clouds} \label{ClusterDeployment}
+\section{Cluster Deployment on Clouds}
 
 In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE allows leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing a functional prototype, which can later be improved by using native cloud APIs in case this is required due to slowdowns caused by the additional clustering layer.
 
@@ -359,9 +359,7 @@ Mesos can be described as a kernel for distributed systems. Its architecture is 
 
 The key advertising points for Mesos are its scalability tested in commercial applications to up to 10.000 nodes and its layered architecture that supersedes classic resource scheduling and distribution systems that maintain the whole state of the underlying infrastructure. Instead, Mesos completely handles resource unification and only requires blocks on top of it to deal with primitives such as resource offers and describing tasks that need to be executed on slave nodes in a cluster.
 
-\vspace{4mm}
-\textbf{Chronos}
-\vspace{1mm}
+\subsubsection{Chronos}
 
 Chronos \cite{Chronos} is a job scheduler that aims to be a modern redesign of the classic Unix utility Cron \cite{Cron}. Although Cron is mainly intended for performing single repetitive tasks and is typically used for scheduling system administration and maintenance tasks at regular time intervals, Chronos expands the feature space by also supporting job execution chains where jobs are triggered by finalisation of their dependencies. 
 
@@ -378,11 +376,9 @@ Figure \ref{ChronosArch} shows how Chronos fits in a system where it communicate
 
 Chronos can aggregate statistics regarding the status of scheduled jobs batches, as well as details on individual executions. It also provides a web dashboard that can be used to manage jobs interactively, but our interest lies along the REST API for automation purposes. The simplest way to deploy and configure Chronos along with Mesos is by using Mesosphere DC/OS \footnote{Datacenter Operating System} \cite{DCOS}.
 
-\vspace{12mm}
-\textbf{Mesosphere DC/OS}
-\vspace{1mm}
+\subsubsection{Mesosphere DC/OS}
 
-Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure shows the analogy between this setup and operating systems running on the Linux kernel.
+Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure \ref{DCOSArch} shows the analogy between this setup and operating systems running on the Linux kernel.
 
 \begin{figure}[h]
 	\centering
@@ -393,7 +389,7 @@ Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and
 
 DC/OS comes with out-of-the-box support for configuring clusters relying on instances provisioned from AWS and Microsoft Azure. By having DC/OS install Chronos, we can start executing jobs remotely using AWS resources. The community edition of the product is fully open-source and free to be used for non-enterprise purposes. However, for our use case this solution suffers from the same problem as CfnCluster, namely the extra cost induced by delegating all the elastic scaling work to services like Amazon Auto Scaling. 
 
-Although DC/OS would not add extra costs directly, it does require more powerful bootstrap, master and agent nodes than either of Elasticluster, Starcluster or CfnCluster. Table \ref{DCOSPricing} shows the hourly price of operating an Amazon EC2 cluster with the minimum required specifications. In comparison, the cost of a \verb|t2.small|| instance that can be used as both a master and compute node in a Starcluster or Elasticluster installation with EBS volumes mounted for shared storage is \$0.026 per hour. This leads to a 10x cost increase only for operating a single master node and ignoring the fact that DC/OS in fact recommends running 3 simultaneous master nodes for optimal performance\footnote{Prices as of June 2016 for instances in US East}.
+Although DC/OS would not add extra costs directly, it does require more powerful bootstrap, master and agent nodes than either of Elasticluster, Starcluster or CfnCluster. Table \ref{DCOSPricing} shows the hourly price of operating an Amazon EC2 cluster with the minimum required specifications. In comparison, the cost of a \verb|t2.small|| instance that can be used as both a master and compute node in a Starcluster or Elasticluster installation with EBS volumes mounted for shared storage is \$0.026 per hour. This leads to a 10x cost increase only for operating a single master node and ignoring the fact that DC/OS in fact recommends running 3 simultaneous master nodes for optimal performance\footnote{All prices are quoted as per May 2016}.
 
 \begin{table}[h]
 \centering
