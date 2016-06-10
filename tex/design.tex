@@ -351,7 +351,9 @@ Figure \ref{GridScaleArch} illustrates the creation of a SLURM module from parti
 	\label{GridScaleArch}
 \end{figure}
 
-\subsubsection{Job Description}
+\vspace{4mm}
+\textbf{Job Description}
+\vspace{1mm}
 
 Job descriptions are typesafe wrappers in Scala that translate to the plaintext scripts accepted by schedulers to queue jobs. The main advantage is that this ensures syntactical correctness of jobs and errors that would prevent jobs from being submitted are caught early. Silent issues such as misusing measurement unit for time or resources are also avoided by relying on a strong type system. 
 
@@ -381,13 +383,14 @@ val description = new SLURMJobDescription {
   override def wallTime = 1 hour
 }
 		\end{minted}
-		\captionof{figure}{Text-based SLURM job definition.}
 	\end{minipage}
-	\caption{Job service used to submit batch jobs to the SGE scheduler.}
+	\caption{Comparison of a plaintext and a Scala SLURM job description.}
 	\label{SLURMJobDescription}
 \end{listing}
 
-\subsubsection{Job Service}
+\vspace{3mm}
+\textbf{Job Service}
+\vspace{1mm}
 
 The job service is the component that manages the lifecycle of jobs. Listing \ref{SLURMJobService} shows the creation of a job service capable of interacting with SLURM. To connect to the remote environment, the service relies on the presence of a target host and login, along with a possibly password-protected SSH private key.
 
@@ -411,13 +414,17 @@ The interface exposed by a job service consists of four main methods: \verb|subm
 
 In contract with other libraries used for distributed resource management libraries that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
 
-\subsubsection{Storage}
+\vspace{3mm}
+\textbf{Storage}
+\vspace{1mm}
 
 Storage wrappers abstract operations with files on the target environment. They are used by job services to set up the runtime by uploading files to remote machines and download results when jobs are done.
 
 Standard POSIX file operations are also enabled in order to complement the usage of command line tools to delegate work. The implementation of all the connections and commands relies on the SSHJ \cite{SSHJ} library, which handles SSH connections and provides the SFTP\footnote{Secure File Transfer Protocol} primitives directly to Java or Scala.
 
-\subsubsection{Authentication}
+\vspace{3mm}
+\textbf{Authentication}
+\vspace{1mm}
 
 The authentication component provides access to all environments covered by GridScale. Private clusters are managed by opening an SSH connection to the master node, so the authentication consists of the address of this machine, the name of the user and a password or private key.
 
