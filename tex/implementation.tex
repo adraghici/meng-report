@@ -1,6 +1,6 @@
 \chapter{Implementation}
 
-This chapter describes the design and implementation of a new service adding support for running workflows on cloud, with the specific target infrastructure being AWS EC2 machines. The deployment, configuration and lifecycle management of the underlying nodes executing the workflow should be transparent to the user, who is only required to provide his credentials to an AWS account.
+This chapter describes the design and implementation of a new service adding support for running workflows on clouds, with the specific target infrastructure being AWS EC2 machines. The deployment, configuration and lifecycle management of the underlying nodes executing the workflow should be transparent to the user, who is only required to provide his credentials to an AWS account.
 
 In accordance with the considerations presented in Chapter \ref{DesignChapter} about the architecture and implementation details of both OpenMOLE and GridScale, we take a layered approach in adding support for a new cloud environment.
 
@@ -20,11 +20,11 @@ As explained in Section \ref{GridScaleSection}, access to each target environmen
 
 The initial idea was to simply implement an AWS specific version of each component. This is though not necessary, as we can reuse some of the already existing components from other modules and GridScale in fact encourages this approach through its modular packaging using OSGi bundles.
 
-In particular, GridScale already supports cluster environments managed by specific schedulers. By building a cluster from a set of machines provisioned from AWS and configuring to emulate the required behaviour, we are able to partially delegate the job management work to an already functional cluster job service. This means that, in contrast with a regular cluster service that acts as a DAO\footnote{Data Access Object} for an existing infrastructure, we also need to provide interface methods through which users of the library can manage the lifecycle of the deployed cluster. We argue that this is a sane choice from an engineering perspective, since we are already familiar with reliable supported schedulers like SGE and SLURM.
+In particular, GridScale already supports cluster environments managed by specific schedulers. By building a cluster from a set of machines provisioned from AWS and configuring to emulate the required behaviour, we are able to partially delegate the job management work to an already functional cluster job service. This means that, in contrast with a regular cluster service that acts as a DAO\footnote{Data Access Object} for an existing infrastructure, we also need to provide interface methods through which users of the library can manage the lifecycle of the deployed cluster. We argue that this is a sane choice from an engineering perspective, since we are already familiar with reliably supported schedulers like SGE and Slurm.
 
-The type of the job description depends on the job service, since it performs a translation to a script that can sent to the scheduler. Therefore, forwarding the submission and monitoring methods to a cluster service as discussed above implies that we need to directly use the description corresponding to the job service.
+The type of the job description depends on the job service, since it performs a translation to a script that can be sent to the scheduler. Therefore, forwarding the submission and monitoring methods to a cluster service as discussed above implies that we need to directly use the description corresponding to the job service.
 
-As long as we can deploy a cluster with a filesystem shared across the network, the \verb|SSHStorage| trait allows accessing the same data volume for the master and slave nodes. EC2 instances can be backed up by either EBS volumes or internal storage, but the solution of installing NFS on the cluster is agnostic to the underlying storage choice and enables using a wide range instance types.
+As long as we can deploy a cluster with a filesystem shared across the network, the \verb|SSHStorage| trait allows accessing the same data volume for the master and slave nodes. EC2 instances can be backed up by either EBS volumes or internal storage, but the solution of installing NFS on the cluster is agnostic to the underlying storage choice and enables using a wide range of instance types.
 
 Authentication is indeed based on the AWS credentials stored locally by the user and requires a new model. However, the standard authentication implementation relying on SSH keys can still be reused as a lower layer of this new implementation in order to access the master node that controls the job submission queue.
 
@@ -79,7 +79,7 @@ The design of the module presented above outlines the requirement for a system t
 
 \textbf{Tool Choice}
 
-During the investigations in Section \ref{ClusterDeployment}, we found that most cost-efficient tools and frameworks for creating the cluster are StarCluster, Elasticluster and Jclouds. The main reason for excluding Mesosphere DC/OS was that it is generally heavyweight and requires running more expensive machines to power the cluster. CfnCluster was dismissed for being to reliant on the AWS software stack, which incurs various extra costs for operations that can easily be performed without Amazon resources.
+During the investigations in Section \ref{ClusterDeploymentSection}, we found that most cost-efficient tools and frameworks for creating the cluster are StarCluster, Elasticluster and Jclouds. The main reason for excluding Mesosphere DC/OS was that it is generally heavyweight and requires running more expensive machines to power the cluster. CfnCluster was dismissed for being too reliant on the AWS software stack, which incurs various extra costs for operations that can easily be performed without Amazon resources.
 
 Jclouds allows mounting various cloud storage devices, but it did not fit our use case since it does not have built-in support for NFS installations. Although Elasticluster can perform all the required tasks, we opted for StarCluster as the cloud deployment tool, since it also provides a load balancer that can be used to optimize the cost or run time of a workflow.
 
@@ -91,9 +91,9 @@ The choice for StarCluster raises the problem that it is only offered as a comma
 
 An initial idea could have been running a Docker container with StarCluster, but we can, once again, not assume the presence of a Docker engine on the user's machine.
 
-The solution we picked was to simply create an EC2 instance with StarCluster already installed. We call this particular instance the cluster \textit{coordinator} or \textit{orchestrator}, since it controls the whole cluster activity by executing the StarCluster commands to operate it. 
+The solution we picked was to create an EC2 instance with StarCluster already installed. We call this particular instance the cluster \textit{coordinator} or \textit{orchestrator}, since it controls the whole cluster activity by executing the StarCluster commands to operate it. 
 
-The coordinator is launched using Jclouds within the \verb|start| method of the \verb|AWSJobService| created on the local machine. Its configuration is based on a prebuilt AMI with an installation of StarCluster and maintained by the developers of GridScale. After the coordinator is in a running state and its public IP address has been established, the \verb|AWSJobService| can start sending commands to it via an SSH channel. This represents step 1 in Figure \ref{CoordinatorSetup}.
+The coordinator is launched using Jclouds within the \verb|start| method of the \verb|AWSJobService| created on the local machine. Its configuration is based on a prebuilt AMI\footnote{Public AMI ID: ami-b7d8cedd} with an installation of StarCluster and maintained by the developers of GridScale. After the coordinator is in a running state and its public IP address has been established, the \verb|AWSJobService| can start sending commands to it via an SSH channel. This represents step 1 in Figure \ref{CoordinatorSetup}.
 
 \begin{figure}[h]
 	\centering
@@ -106,7 +106,7 @@ In order to start the coordinator node, Jclouds needs to authenticate the user. 
 
 Apart from using the IAM credentials to make EC2 API calls, we are also opening SSH channels to deliver commands to the coordinator. To do this we need to register the SSH key we are using to initiate the connection to the coordinator on AWS. This is achieved by importing the public key on AWS and giving it a name. The \verb|awsKeypairName| associated with the private key is then always mentioned when openning an SSH connection.
 
-Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provision for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it. Further details are discussed in Section \ref{CoordinatorOverheadSection}.
+Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provisionned for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it. Further details are discussed in Section \ref{CoordinatorOverheadSection}.
 
 \vspace{3mm}
 \textbf{StarCluster Configuration}
@@ -166,22 +166,27 @@ After obtaining the address of the master, the local machine needs to establish 
 \textbf{SGE Delegation}
 \vspace{1mm}
 
-StarCluster deploys SGE as its scheduler and, as discussed in Section \ref{DesignMotivationSection}, we are able to delegate all job submission methods of the \verb|AWSJobService| to an \verb|SGEJobService|. This is possible thanks to full compatibility between the interfaces of different GridScale modules. A side effect is that \verb|AWSJobDescription| is just a subtype of \verb|SGEJobDescription|, as they are both tied to their corresponding job services. Tasks are specified in the same way as for plain SGE and are eventually translated to SGE jobs. Steps 4 and 5 in Figure \ref{MasterConnection} show the normal job submission mechanism after the setup phase is finished. Once a queue of jobs is populated, the work is distributed by the scheduling system to all nodes in the cluster.
+StarCluster deploys SGE as its scheduler and, as discussed in Section \ref{DesignMotivationSection}, we are able to delegate all job submission methods of the \verb|AWSJobService| to an \verb|SGEJobService|. This is possible thanks to full compatibility between the interfaces of different GridScale modules. A side effect is that \verb|AWSJobDescription| is just a subtype of \verb|SGEJobDescription|, as we are in fact submitting SGE jobs. The \verb|AWSJobService| could have used \verb|SGEJobDescription|s, but we chose to hide this module dependency from the user of the library.
 
-\vspace{1mm}
+ Tasks are specified in the same way as for plain SGE and are eventually translated to SGE jobs. Steps 4 and 5 in Figure \ref{MasterConnection} show the normal job submission mechanism after the setup phase is finished. Once a queue of jobs is populated, the work is distributed by the scheduling system to all nodes in the cluster.\\
+
+\vspace{3mm}
 \textbf{Cluster Lifecycle}
+\vspace{1mm}
 
-The coordinator node and the cluster are tightly coupled in our design because the cluster can not be altered without the coordinator, which, in turn, does not make sense on its own. Therefore it makes sense for the lifecycle of the two components to be managed together, so the \verb|close| method of \verb|AWSJobService| shuts down the cluster, destroys the orchestrator and kills Jclouds communication channels to AWS.
+The coordinator node and the cluster are tightly coupled in our design because the cluster can not be altered without the coordinator, which, in turn, is not relevant on its own. Therefore it makes sense for the lifecycle of the two components to be managed together, so the \verb|close| method of \verb|AWSJobService| shuts down the cluster, destroys the orchestrator and kills Jclouds communication channels to AWS.
 
 Even though \verb|start| and \verb|close| could have been implicitly called respectively when an instance of the job service is created and when all jobs are finished, keeping them in the public API allows the user of a library more flexibility towards reusing the service for more sessions without having to repeatedly wait for the initialization steps.
 
 \subsection{Load Balancing}
 
-We use the built-in StarCluster load balancer to decrease or increase the number of nodes in the cluster between limits specified by the user. We start the daemon that performs job monitoring right after launching the cluster and keep the standard 60 seconds polling interval. If the user does not specify a \verb|minimumClusterSize| or \verb|maximumClusterSize| for elastic scaling purposes when creating the job service, then we allow the cluster to shrink or extend in size between 1 node and its initial size. We argue that this the cautious choice, since it can potentially only reduce costs and not incur any unexpected ones.
+We use the built-in StarCluster load balancer to decrease or increase the number of nodes in the cluster between limits specified by the user. We start the daemon that performs job monitoring right after launching the cluster and keep the standard 60 seconds polling interval. 
+
+If the user does not specify a \verb|minimumClusterSize| or \verb|maximumClusterSize| for elastic scaling purposes when creating the job service, then we allow the cluster to shrink or extend in size between 1 node and its initial size. We argue that this is the cautious choice, since it can potentially only reduce costs and not incur any unexpected ones.
 
 Another option we expose is to automatically killing the cluster (by setting the \verb|autoClose| flag) if it is stays completely idle for a certain period after all jobs have been terminated. Some consumers of the library may prefer this as the default option rather than having to explicitly estimate when work is done and call \verb|close|.
 
-To obtain a highly elastic cluster, users can also reduce the 3 minute lookback window via the \verb|lookbackWindow| parameter, which represents the time after which an idle node is considered for elimination. However, note that nodes will never be eliminated unless they have already been running for at least 45 minutes of the hour they have been rented for. Due to Amazon's hourly rental policy, an overly eager resource cutting approach would be non optimal.
+To obtain a highly elastic cluster, users can also reduce the 3 minute lookback window via the \verb|lookbackWindow| parameter, which represents the time after which an idle node is considered for elimination. However, note that nodes will never be eliminated unless they have already been running for at least 45 minutes of the hour they have been rented for. Due to Amazon's hourly rental policy, an overly eager resource cutting approach would be non-optimal, since we would be giving away power that has already been paid for and might be employed in case of a sudden spike in job submissions.
 
 \subsection{Spot Instances}
 
@@ -193,7 +198,7 @@ If the current market price is lower than the average, then we are ahead of the 
 
 If the current market price is lower than the average, then we are safe to use the instance for at least a couple of hours by simply bidding the average value, since spot prices fluctuate at a relatively steady rate. In the opposite scenario, we bid the market price plus an additional 10\% to account for unexpected change, but we assume that the price will tend towards the average.
 
-Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to reduce renting costs, because prices for spot instances are already approximately 6 times lower\footnote{Prices as of June 2016 for instances in US East} than for regular on-demand ones, as seen in Table \ref{SpotPricing}. Section \ref{OpenMOLEAWSSection} also details how OpenMOLE can gracefully deal with spot instances being lost, so designing a complicated strategy to optimise bidding only has diminishing returns.
+Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to reduce renting costs, because prices for spot instances are already approximately 6 times lower than for regular on-demand ones as of June 2016 in US East, as shown in Table \ref{SpotPricing}. Section \ref{OpenMOLEAWSSection} also details how OpenMOLE can gracefully deal with spot instances being lost, so complicated strategy to optimise bidding only has diminishing returns.
 
 \begin{table}[h]
 \centering
@@ -293,7 +298,7 @@ Both Elasticluster and Mesosphere DC/OS provide primitives for creating and mana
 
 Since we want to preserve the assumption of no configuration being necessary on behalf of the user and Elasticluster is a command line tool, it needs to be run by a remote coordinator node. The proxy node is started using the Jclouds API and SSH pairing between the local machine and the coordinator is performed by importing an SSH keypair associated with a service accounts. These serve a similar purpose as Amazon IAM roles and essentially regulate programmatic access to resources associated with the account.
 
-The Elasticluster configuration file is based on the interplay between different Ansible playbooks and also needs to be generated dynamically. The example file shown in Listing \ref{ElastiClusterConfig} exposes similarities with StarCluster. It begins by specifying the details of the desired cloud provider, login details and Ansible playbook that provides a SLURM installation and an NFS-shared storage volume. Line 19 bring the components together and assembles a cluster with a single master node acting as an SSH entry point and two worker nodes.
+The Elasticluster configuration file is based on the interplay between different Ansible playbooks and also needs to be generated dynamically. The example file shown in Listing \ref{ElastiClusterConfig} exposes similarities with StarCluster. It begins by specifying the details of the desired cloud provider, login details and Ansible playbook that provides a Slurm installation and an NFS-shared storage volume. Line 19 bring the components together and assembles a cluster with a single master node acting as an SSH entry point and two worker nodes.
 
 \begin{listing}[h]
 	\centering

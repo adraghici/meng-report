@@ -8,9 +8,9 @@ OpenMOLE\cite{OpenMOLE} is a workflow execution engine that focuses both on allo
 
 One of the main objectives of OpenMOLE is embedding workflow models and definitions provided by users in many different forms \cite{Reuillon2013}. Generally, other workflow engines have rigid, text-based rules used to describe individual tasks and their connections, while providing limited support for calling external programs. 
 
-However, OpenMOLE uses a DSL\footnote{Domain Specific Language} built on top of Scala\cite{Scala} to embed a wide variety of tasks defined in any programming language based on the Java Virtual Machine (Java, Scala, Clojure, Groovy, Kotlin). Additionally, prepackaged binaries, C++ executables and Python scripts that depend on shared libraries or pre-loaded packages are seamlessly integrated into workflows. Benefits of relying on Scala's type system include more meaningful task descriptions and early error detection since potential mistakes are caught on compile-time, instead of only after submission to grids or clusters.
+However, OpenMOLE uses a DSL\footnote{Domain Specific Language} built on top of Scala\cite{Scala} to embed a wide variety of tasks defined in any programming language based on the Java Virtual Machine (Java, Scala, Clojure, Groovy, Kotlin). Additionally, prepackaged binaries, C++ executables and Python scripts that depend on shared libraries or pre-loaded packages are seamlessly integrated into workflows. Benefits of relying on Scala's type system include more meaningful task descriptions and early error detection since potential mistakes are caught at compile-time, instead of only after submission to grids or clusters.
 
-Possible execution environments include the user's local machine, SSH servers, grids or self-hosted clusters operated by one of the many supported schedulers: SGE \cite{SGE}, SLURM, PBS \cite{PBS}, HTCondor \cite{HTCondor}, OAR \cite{OAR} or Torque \cite{Torque}. These are all enabled by GridScale \cite{Reuillon2016}, the self-contained library that is shipped by default with OpenMOLE and handles job management on distributed computing environments.
+Possible execution environments include the user's local machine, SSH servers, grids or self-hosted clusters operated by one of the many supported schedulers: SGE \cite{SGE}, Slurm, \cite{SLURM} PBS \cite{PBS}, HTCondor \cite{HTCondor}, OAR \cite{OAR} or Torque \cite{Torque}. These are all enabled by GridScale \cite{Reuillon2016}, the self-contained library that is shipped by default with OpenMOLE and handles job management on distributed computing environments.
 
 The OpenMOLE platform is now mature and has engaged a loyal user base. It is regularly used for large scale experiments and its robustness in combination with GridScale was proven by experiments where it has been used to run half a billion tasks on EGI\footnote{European Grid Initiative} \cite{Schmitt2015}.
 
@@ -81,7 +81,7 @@ Figure \ref{OpenMOLEWorkflow} shows a graphical representation of the combinatio
 	\label{OpenMOLEWorkflow}
 \end{figure}
 
-Going beyond the simple example, Listing \ref{Sampling} shows a sampling that explores all combinations of a discrete parameter \verb|i|, a continuous parameter \verb|j|, a file \verb|f| from the given \verb|workDirectory| and a random seed \verb|s| sampled from a uniform distribution. This is achieved using the \textit{x} combinator, which unrolls the domain for each parameter before combining all the possibilities \cite{OpenMOLEDSL}.
+Going beyond the simple example, Listing \ref{Sampling} shows a sampling that explores all combinations of a discrete parameter \verb|i|, a continuous parameter \verb|j|, a file \verb|f| from the given \verb|workDirectory| and a random seed \verb|s| sampled from a uniform distribution. This is achieved using the \textit{x} combinator, which unrolls the domain for each parameter before combining all the possibilities, essentially taking a cartesian product of the parameter sets \cite{OpenMOLEDSL}.
 
 \begin{listing}[h]
 	\centering
@@ -134,11 +134,17 @@ exploration -< t1 -- t2 -- t3 >- aggregate
 	\label{Transitions}
 \end{listing}
 
-Our initial example showed the simple case of running a workflow on the user's machine using a \verb|LocalEnvironment|. However, this is only usually done for testing locally before scaling the experiment and other types of environments are used for real experiments. Listing \ref{Environments} shows examples of instantiating SSH servers and cluster environments.
+Our initial example showed the simple case of running a workflow on the user's machine using a \verb|LocalEnvironment|. However, this is only usually done for testing locally before scaling the experiment and other types of environments are used for real experiments. Section \ref{EnvironmentsSection}
 
-The user can be authenticated either with a login and password combination, or via a private key. Here we define the authentication by specifying the path to the private key, the associated login and the remote machine's full address. The \verb|encrypted| parameter references a function that will prompt the user for the key's password in case it is protected.
+The user can be authenticated either with a login and password combination, or via a private key. Here we define the authentication by specifying the path to the private key, the associated login and the remote machine's full address. The \verb|encrypted| parameter references a function that will prompt the user for the key's password in case it is protected. This process is done once and for all and stores the new authentication in OpenMOLE's preferences folder. It is consequently rarely seen in actual workflow scripts that will reuse an already defined authentication.
 
-Environments are created by providing the shell login on the remote machine and its address. For the SSH server, we also specify the number of cores that can be used by the workflow. Cluster environments require that the target machine can act as the master of the cluster, being able to take commands for submitting and querying job status.
+\subsection{Environments} \label{EnvironmentsSection}
+
+Remote execution environments are are the engines providing computational power for running experiments. Generally, environments set up on grids or clusters are created by providing a shell login on the remote machine as well as its address, but this complexity needs to be hidden from the user in the case of a cloud environment.
+
+The end goal of the project is to provide an \verb|AWSEnvironment|, which can be instantiated by only receiving the user's AWS credentials as parameters. This should automatically create a cluster backed up by EC2 instances and configure it with a scheduler that distributes job submissions generated by the workflow.
+
+Listing \ref{Environments} shows examples of instantiating SSH servers and cluster environments. For the SSH server, we also specify the number of cores that can be used by the workflow. Cluster environments require that the target machine can act as the master of the cluster, being able to take commands for submitting and querying job status.
 
 \begin{listing}[h]
 	\centering
@@ -160,128 +166,7 @@ val sgeEnv = SGEEnvironment("login", "master-address")
 	\label{Environments}
 \end{listing}
 
-The aim is to provide a similar \verb|AWSEnvironment| primitive, which only receives the user's AWS credentials as parameters. This should automatically create a cluster backed up by EC2 instances and configure it with a scheduler that distributes job submissions generated by the workflow.
-
-\subsection{Job Distribution}
-
-Compared to other workflow platforms, OpenMOLE follows a zero-deployment approach, meaning that it does not rely on any software being installed on the target machines that the task-generated jobs will run on \cite{Reuillon2013}. In order to support this, a setup phase is required before the task execution step itself. This involves uploading several components to the remove environment \cite{Reuillon2010}:
-
-\begin{itemize}
-	\item The OpenMOLE runtime, which includes the OpenMOLE framework and the Java Virtual Machine used to run it.
-	\item Task descriptions along with their serialized execution contexts, which describe variables used by the task to transport data.
-	\item Resource files used by the tasks.
-\end{itemize}
-
-After all the dependencies are in place, a job is packaged to reference the runtime, task and context it corresponds to. Once it is assigned to an execution node by a the submission system, it downloads the runtime and runs the task in the given context. Note that the potentially expensive step of copying the runtime on each node is rarely necessary in practice, since clusters and grids usually operate on filesystems shared across all nodes.
-
-Once finished, jobs upload their results to the storage system. Meanwhile, the OpenMOLE framework continuously tracks the state of the job by querying the submission system and downloads the outputs on the local machine of the user upon completion. The whole process is presented as a sequence diagram in Figure \ref{OpenMOLERuntime}.
-
-\begin{figure}[H]
-	\centering
-		\includegraphics[width=1\linewidth]{OpenMOLERuntime.png}
-	\caption{Delegation of a task to remote execution environment in OpenMOLE. \cite{Reuillon2010}.}
-	\label{OpenMOLERuntime}
-\end{figure}
-
-\subsection{CARE} \label{CARESection}
-
-Resolution of dependencies is a classical problem in the context of job distribution to remote environments, especially in the case of having little to no control over their configuration. Compiled binaries like C++ applications require shared libraries at runtime, while interpreted languages depend on various packages to be present on the execution node. 
-
-Users of grids and clusters do not usually have access to install the needed dependencies. Grids are particularly tricky, since they represent shared pools of heterogeneous resources that are likely to be configured and deployed differently than on a local machine that a workflow is initially tested on \cite{Leclaire2016}.
-
-The first partial solutions were application specific and not always feasible. For example, C++ programs can be built as static binaries that package all the dependencies, but this is a problem in the case of applications using proprietary libraries without publicly available source code.
-
-A practice that has recently gained traction in software engineering communities particularly via Docker \cite{Docker} is the use of containers. A container consists the entire software stack required to run an application, including dependencies as packages, binaries or configuration files. Containers accomplish a similar purpose to virtual machines, with the main advantage that they are designed to be lightweight. They are smaller in size than full-fledged virtual machine images, can be started faster and numerous instances can be hosted by a single operating system, making their deployment straightforward in comparison with the hypervisor configuration required to host virtual machines.
-
-However, the use of Docker containers also presumes the existence of the Docker engine on the target machine and this can not be ensured for environments over which scientists only have user access. This leads to the choice for CARE \cite{Janin2014}, an open-source application for reproducible executions that only relies on being run on a Linux platform. CARE works by intercepting all the requirements of an application during an initial run and repackaging all the dependencies in a self-extracting binary. 
-
-CARE also ensures full interoperability between packaging and execution environments, meaning that all modern Linux-based operating systems support running archives packaged under a different Linux distribution. This allows OpenMOLE to remotely distribute the application packaged on the user's machine without concerns about the particularities of Linux flavours present in a grid or cluster.
-
-More specifically, binaries are embedded in OpenMOLE via a \verb|CARETask|, which takes as parameters the location of the archive and the specific command that needs to be executed in the packaged runtime. OpenMOLE then runs the given command in the unpackaged directory on the remote node, copying the input files in the process as usual. Figure \ref{OpenMOLECARE} depicts the interplay between a CARE archive created by the user and the \verb|CARETask| in OpenMOLE. Listing \ref{CARETask} shows a sample task embedding a Python script.
-
-\begin{figure}[h]
-	\centering
-		\includegraphics[width=0.8\linewidth]{OpenMOLECARE.png}
-	\caption{Delegation of a task to remote execution environment in OpenMOLE. \cite{Leclaire2016}.}
-	\label{OpenMOLECARE}
-\end{figure}
-
-\begin{listing}[h]
-	\centering
-	\begin{minipage}{13cm}
-		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
-val output = Val[String]
-val error = Val[String]
-val value = Val[Int]
-
-val pythonTask = 
-  CARETask("hello.tgz.bin", "python hello.py /data/fileA.txt") set ( 
-    stdOut := output,
-    stdErr := error, 
-    returnValue := value, 
-    hostFiles += ("/home/user/fileA.txt", "/data/fileA.txt") 
-  )
-		\end{minted}
-	\end{minipage}
-	\caption{Example Python CARETask \cite{Leclaire2016}.}
-	\label{CARETask}
-\end{listing}
-
-\subsection{Job Management}
-
-Most of the logic of coordinating the execution of jobs and collection of results is handled by a \verb|JobManager| class. It uses a message queue to direct commands to separate actors responsible for uploading resources to execution nodes, submitting, querying or purging jobs, as in Listing \ref{JobManager}. 
-
-The message queue is consumed iteratively by a unique dispatcher actor that routes messages to the specialised receiver actors. This model ensures a clear separation between individual actions carried out to monitor the jobs.
-
-\begin{listing}[h]
-	\centering
-	\begin{minipage}{13.8cm}
-		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1,fontsize=\footnotesize,linenos]{scala}
-class JobManager {
-  ...
-  def !(msg: JobMessage): Unit = msg match {
-    case msg: Upload             |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: Submit             |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: Refresh            |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: GetResult          |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: KillBatchJob       |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: DeleteFile         |$\Rightarrow$| messageQueue.enqueue(msg)
-    case msg: CleanSerializedJob |$\Rightarrow$| messageQueue.enqueue(msg)
-    
-    case Manage(job) |$\Rightarrow$|
-      self ! Upload(job)
-      
-    case Delay(msg, delay) |$\Rightarrow$|
-      delayedExecutor.schedule(self ! msg, delay.toMillis, TimeUnit.MILLISECONDS)
-      
-    case Uploaded(job, sj) |$\Rightarrow$|
-      job.serializedJob = Some(sj)
-      self ! Submit(job, sj)
-      
-    case Submitted(job, sj, bj) |$\Rightarrow$|
-      val interval = job.environment.minUpdateInterval
-      job.batchJob = Some(bj)
-      self ! Delay(Refresh(job, sj, bj, interval), interval)
-      
-    case Kill(job) |$\Rightarrow$|
-      job.state = ExecutionState.KILLED
-      killAndClean(job)
-      
-    case Resubmit(job, storage) |$\Rightarrow$|
-      killAndClean(job)
-      job.state = ExecutionState.READY
-      messageQueue.enqueue(Upload(job))      
-    ...
-}
-		\end{minted}
-	\end{minipage}
-	\caption{Job lifecycle management.}
-	\label{JobManager}
-\end{listing}
-
-\subsection{Environments}
-
-Remote execution environments are added through a plugin system by implementing the \verb|BatchEnvironment| trait. This comes with a built-in \verb|JobManager| and various other defaults useful for modelling a generic job submission environment. \verb|ClusterEnvironment| is wrapper that ensures steady traffic flow to a cluster by limiting the number of outgoing connections and adds an interface for accessing storage via SSH.
+In OpenMOLE, environments are added through a plugin system by implementing the \verb|BatchEnvironment| trait. This comes with a built-in \verb|JobManager| and various other defaults useful for modelling a generic job submission environment. \verb|ClusterEnvironment| is wrapper that ensures steady traffic flow to a cluster by limiting the number of outgoing connections and adds an interface for accessing storage via SSH.
 
 Each concrete environment in OpenMOLE has a corresponding job service. The low-level mechanics of interacting with the scheduler and running individual jobs remotely are abstracted away in GridScale, so job services attached to environments decorate this behaviour with batch submission capabilities. 
 
@@ -315,7 +200,111 @@ trait SGEJobService
 	\label{SGEJobService}
 \end{listing}
 
-Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs on the underlying GridScale level are also called job services, so we must always consider the distinction. On line 8, a shell script embedding the task to be run is created from a serialized job. On line 11, the script is assigned to be run by \verb|bash| as part of an \verb|SGEJobDescription|. The job is then submitted to the underlying GridScale job service on line 17.
+Listing \ref{SGEJobService} shows the core of the \verb|SGEJobService|. Note that objects used to manage individual jobs at the underlying GridScale level are also called job services, so we must always consider the distinction. On line 8, a shell script embedding the task to be run is created from a serialized job. On line 11, the script is assigned to be run by \verb|bash| as part of an \verb|SGEJobDescription|. The job is then submitted to the underlying GridScale job service on line 17.
+
+\subsection{Job Distribution}
+
+Compared to other workflow platforms, OpenMOLE follows a zero-deployment approach, meaning that it does not rely on any software being installed on the target machines that the task-generated jobs will run on \cite{Reuillon2013}. In order to support this, a setup phase is required before the task execution step itself. This involves uploading several components to the remove environment \cite{Reuillon2010}:
+
+\begin{itemize}
+	\item The OpenMOLE runtime, which includes the OpenMOLE framework and the Java Virtual Machine used to run it.
+	\item Task descriptions along with their serialized execution contexts, which describe variables used by the task to transport data.
+	\item Resource files used by the tasks.
+\end{itemize}
+
+After all the dependencies are in place, a job is packaged to reference the runtime, task and context it corresponds to. Once it is assigned to an execution node by the environment's native submission system, it downloads the runtime and runs the task in the given context. 
+
+\begin{figure}[H]
+	\centering
+		\includegraphics[width=0.92\linewidth]{OpenMOLERuntime.png}
+	\caption{Delegation of a task to remote execution environment in OpenMOLE. \cite{Reuillon2010}.}
+	\label{OpenMOLERuntime}
+\end{figure}
+
+Note that the potentially expensive step of copying the runtime on each node is rarely necessary in practice, since clusters and grids usually operate on filesystems shared across all nodes. OpenMOLE also maintains a cache of the file replicas already uploaded to remote storages, so that a file never gets uploaded twice to the same storage as long as it's not been modified on the host system.
+
+Once finished, jobs upload their results to the storage system. Meanwhile, the OpenMOLE framework continuously tracks the state of the job by querying the submission system and downloads the outputs on the local machine of the user upon completion. The whole process is presented as a sequence diagram in Figure \ref{OpenMOLERuntime}.
+
+\subsection{CARE} \label{CARESection}
+
+Resolution of dependencies is a classical problem in the context of job distribution to remote environments, especially in the case of having little to no control over their configuration. Compiled binaries like C++ applications require shared libraries at runtime, while interpreted languages depend on various packages to be present on the execution node. 
+
+Users of grids and clusters do not usually have access to install the needed dependencies. Grids are particularly tricky, since they represent shared pools of heterogeneous resources that are likely to be configured and deployed differently than on a local machine that a workflow is initially tested on \cite{Leclaire2016}.
+
+The first partial solutions were application specific and not always feasible. For example, C++ programs can be built as static binaries that package all the dependencies, but this is a problem in the case of applications using proprietary libraries without publicly available source code.
+
+A practice that has recently gained traction in software engineering communities particularly via Docker \cite{Docker} is the use of containers. A container consists the entire software stack required to run an application, including dependencies as packages, binaries or configuration files. Containers accomplish a similar purpose to virtual machines, with the main advantage that they are designed to be lightweight. They are smaller in size than full-fledged virtual machine images, can be started faster and numerous instances can be hosted by a single operating system, making their deployment straightforward in comparison with the hypervisor configuration required to host virtual machines.
+
+However, the use of Docker containers also presumes the existence of the Docker engine on the target machine and this can not be ensured for environments over which scientists only have user access. This leads to the choice for CARE \cite{Janin2014}, an open-source application for reproducible executions that only relies on being run on a Linux platform. CARE works by intercepting all the requirements of an application during an initial run and repackaging all the dependencies in a self-extracting binary. 
+
+CARE also ensures full interoperability between packaging and execution environments, meaning that all modern Linux-based operating systems support running archives packaged under a different Linux distribution. This allows OpenMOLE to remotely distribute the application packaged on the user's machine without concerns about the particularities of Linux flavours present in a grid or cluster.
+
+\begin{figure}[h]
+	\centering
+		\includegraphics[width=0.8\linewidth]{OpenMOLECARE.png}
+	\caption{Delegation of a task to remote execution environment in OpenMOLE. \cite{Leclaire2016}.}
+	\label{OpenMOLECARE}
+\end{figure}
+
+More specifically, binaries are embedded in OpenMOLE via a \verb|CARETask|, which takes as parameters the location of the archive and the specific command that needs to be executed in the packaged runtime. OpenMOLE then runs the given command in the unpackaged directory on the remote node, copying the input files in the process as usual. Figure \ref{OpenMOLECARE} depicts the interplay between a CARE archive created by the user and the \verb|CARETask| in OpenMOLE. Listing \ref{CARETask} shows a sample task embedding a Python script.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{13cm}
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
+val output = Val[String]
+val error = Val[String]
+val value = Val[Int]
+
+val pythonTask = 
+  CARETask("hello.tgz.bin", "python hello.py /data/fileA.txt") set ( 
+    stdOut := output,
+    stdErr := error, 
+    returnValue := value, 
+    hostFiles += ("/home/user/fileA.txt", "/data/fileA.txt") 
+  )
+		\end{minted}
+	\end{minipage}
+	\caption{Example Python CARETask \cite{Leclaire2016}.}
+	\label{CARETask}
+\end{listing}
+
+\subsection{Job Management}
+
+Most of the logic of coordinating the execution of jobs and collection of results is handled by a \verb|JobManager| class. It uses a message queue to direct commands to separate actors responsible for uploading resources to execution nodes, submitting, querying or purging jobs, as in Listing \ref{JobManager}. 
+
+\begin{listing}[H]
+	\centering
+	\begin{minipage}{8.9cm}
+		\begin{minted}[frame=single,framesep=2mm,escapeinside=||,baselinestretch=1,fontsize=\footnotesize,linenos]{scala}
+class JobManager {
+  ...
+  def !(msg: JobMessage): Unit = msg match {
+    case msg: Upload   |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: Submit   |$\Rightarrow$| messageQueue.enqueue(msg)
+    case msg: Refresh  |$\Rightarrow$| messageQueue.enqueue(msg)
+    ...
+
+    case Manage(job) |$\Rightarrow$|
+      self ! Upload(job)
+      
+    case Uploaded(job, sj) |$\Rightarrow$|
+      job.serializedJob = Some(sj)
+      self ! Submit(job, sj)
+      
+    case Resubmit(job, storage) |$\Rightarrow$|
+      killAndClean(job)
+      job.state = ExecutionState.READY
+      messageQueue.enqueue(Upload(job))      
+    ...
+}
+		\end{minted}
+	\end{minipage}
+	\caption{Job lifecycle management.}
+	\label{JobManager}
+\end{listing}
+
+The message queue is consumed iteratively by a unique dispatcher actor that routes messages to the specialised receiver actors. This model ensures a clear separation between individual actions carried out to monitor the jobs.
 
 \section{GridScale} \label{GridScaleSection}
 
@@ -327,7 +316,7 @@ Historically, the scientific community has relied on specifications developed by
 
 GridScale chooses to stay away from particular standards and favours an approach where very few assumptions are made about the configuration of the target infrastructure. In particular, it only requires that the accessed environment runs a Linux distribution and the user has access to the \textit{bash} shell via SSH. This is reasonable to expect from most machines, since \textit{bash} is the default in most cases and a login shell is not needed. 
 
-Jobs are submitted and monitored using the standard command line tools that would be manually invoked by the user. For example, SGE jobs are managed using \verb|qsub|, \verb|qstat| and \verb|qdel|, while SLURM jobs are managed using \verb|sbatch|, \verb|scontrol| and \verb|scancel| for submission, state querying and termination, respectively.
+Jobs are submitted and monitored using the standard command line tools that would be manually invoked by the user. For example, SGE jobs are managed using \verb|qsub|, \verb|qstat| and \verb|qdel|, while Slurm jobs are managed using \verb|sbatch|, \verb|scontrol| and \verb|scancel| for submission, state querying and termination, respectively.
 
 \subsection{Module Design}
 
@@ -342,12 +331,12 @@ Every module corresponding to an environment consists of four different componen
 	\item An \textit{Authentication} rule for granting access rights using a login and password combination, SSH or certificate authentication.
 \end{itemize}
 
-Figure \ref{GridScaleArch} illustrates the creation of a SLURM module from particular implementations of the four component interface. Although the underlying technique in the cake pattern is different, it achieves a similar result to standard dependency injection in languages like Java by offering modules easy to assemble.
+Figure \ref{GridScaleArch} illustrates the creation of a Slurm module from particular implementations of the four component interface. Although the underlying technique in the cake pattern is different, it achieves a similar result to standard dependency injection in languages like Java by offering modules easy to assemble.
 
 \begin{figure}[h]
 	\centering
 		\includegraphics[width=0.65\linewidth]{GridScaleArch.png}
-	\caption{GridScale architecture and instantiating the SLURM module \cite{Reuillon2016}.}
+	\caption{GridScale architecture and instantiating the Slurm module \cite{Reuillon2016}.}
 	\label{GridScaleArch}
 \end{figure}
 
@@ -357,7 +346,7 @@ Figure \ref{GridScaleArch} illustrates the creation of a SLURM module from parti
 
 Job descriptions are typesafe wrappers in Scala that translate to the plaintext scripts accepted by schedulers to queue jobs. The main advantage is that this ensures syntactical correctness of jobs and errors that would prevent jobs from being submitted are caught early. Silent issues such as misusing measurement unit for time or resources are also avoided by relying on a strong type system. 
 
-Listing \ref{SLURMJobDescription} compares the definition of a simple SLURM job using the standard approach in a text \verb|bash| script and its equivalent counterpart in GridScale. Note that, even for a relatively short description, the plaintext version can easily become ambiguous in sections where durations or paths are specified.
+Listing \ref{SLURMJobDescription} compares the definition of a simple Slurm job using the standard approach in a text \verb|bash| script and its equivalent counterpart in GridScale. Note that, even for a relatively short description, the plaintext version can easily become ambiguous in sections where durations or paths are specified.
 
 \begin{listing}[h]
 	\centering
@@ -384,7 +373,7 @@ val description = new SLURMJobDescription {
 }
 		\end{minted}
 	\end{minipage}
-	\caption{Comparison of a plaintext and a Scala SLURM job description.}
+	\caption{Comparison of a plaintext and a Scala Slurm job description.}
 	\label{SLURMJobDescription}
 \end{listing}
 
@@ -392,7 +381,7 @@ val description = new SLURMJobDescription {
 \textbf{Job Service}
 \vspace{1mm}
 
-The job service is the component that manages the lifecycle of jobs. Listing \ref{SLURMJobService} shows the creation of a job service capable of interacting with SLURM. To connect to the remote environment, the service relies on the presence of a target host and login, along with a possibly password-protected SSH private key.
+The job service is the component that manages the lifecycle of jobs. Listing \ref{SLURMJobService} shows the creation of a job service capable of interacting with Slurm. To connect to the remote environment, the service relies on the presence of a target host and login, along with a possibly password-protected SSH private key.
 
 \begin{listing}[h]
 	\centering
@@ -406,13 +395,13 @@ val slurmService = new SLURMJobService with SSHPrivateKeyAuthentication {
 }
 		\end{minted}
 	\end{minipage}
-	\caption{Job service used to submit batch jobs to the SLURM scheduler.}
+	\caption{Job service used to submit batch jobs to the Slurm scheduler.}
 	\label{SLURMJobService}
 \end{listing}
 
 The interface exposed by a job service consists of four main methods: \verb|submit|, \verb|state|, \verb|cancel| and \verb|purge|. These allow initiating jobs, checking their status, terminating them and cleaning up temporary data. 
 
-In contract with other libraries used for distributed resource management libraries that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
+In contrast with other libraries used for distributed resource management that retain caches of the system status, GridScale job services promote a functional approach and are designed to be immutable and hold as little state as possible. Therefore, all the public methods are pure and simply forward the request to the remote scheduler.
 
 \vspace{3mm}
 \textbf{Storage}

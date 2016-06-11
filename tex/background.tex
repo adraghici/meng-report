@@ -161,9 +161,9 @@ However, further development of workflow management systems is needed in order t
 
 Despite the trend towards cloud-based systems, the process of running Pegasus workflows in the cloud has still not been fully automated. Users are required to manually configure the job submission host and worker nodes to run the required software \cite{PegasusTutorial}. At the moment, the technical barrier for harnessing the cloud from Pegasus is higher than grid-based options, that are usually specifically designed for running experiments and provide a preconfigured software stack.
 
-\section{Cluster Deployment on Clouds} \label{ClusterDeployment}
+\section{Cluster Deployment on Clouds}
 
-In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE allows leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing functional prototype, which can later be improved by using native cloud APIs in case this is required due to slowdowns caused by the additional clustering layer.
+In this section, we analyse some of the tools that can be used for creating a cluster from a set of instances provided in a cloud environment. The main motivation behind the investigation is that deploying a cluster running one of the environments already supported in OpenMOLE allows leveraging the existing infrastructure by simply delegating the work to a cluster running in the cloud. We believe that this is a sane approach for developing a functional prototype, which can later be improved by using native cloud APIs in case this is required due to slowdowns caused by the additional clustering layer.
 
 Throughout the investigation, we focus on the features relevant to managing cloud infrastructures. We are interested in a tool that:
 \begin{itemize}
@@ -191,7 +191,7 @@ On top of this, the StarCluster AMI also contains tools like OpenMPI \cite{OpenM
 StarCluster relies heavily on the assumption that users prefer sensible defaults rather than extensive configuration. The standard installation requires a single \verb|start| command to set up a cluster with a given number of nodes on EC2 and new clusters are automatically configured with NFS and SGE support. Listed below are some of the most useful commands exposed by StarCluster:
 \begin{itemize}
 	\item \verb|start| launches a cluster as per the specification provided in the configuration file. It allows for many different variations of cluster creation, where instances can also be simply started but not provisioned with the default software. The user can also simply perform a dry run and simply simulate starting the cluster to prevent unexpected issues in production.
-	\item \verb|terminate| completely purges the given cluster, shutting down all nodes and removing its previously security group. If the cluster is backed up by EBS volumes, the root volumes of each node can also be deleted.
+	\item \verb|terminate| completely purges the given cluster, shutting down all nodes and removing its previously created security group. If the cluster is backed up by EBS volumes, the root volumes of each node can also be deleted.
 	\item \verb|sshmaster| and \verb|sshnode| allow for easy SSH access to all nodes in the cluster relying on the AWS keypair provided in the configuration file for authentication. Slave nodes are automatically numbered in a human-readable format - \verb|node001|, \verb|node002|, etc.
 	\item \verb|put| and \verb|get| enable transferring files between the user's local machine and a running cluster, where they are instantly shared via NFS.
 	\item \verb|createkey| is a useful for creating a new SSH keypair and simultaneously both saving it locally and importing it to the user's AWS account.
@@ -203,7 +203,7 @@ StarCluster relies heavily on the assumption that users prefer sensible defaults
 
 The load balancing component allows choosing the minimum and maximum number of nodes that the size of the cluster can vary between, as well as its growth rate. The user can align this with domain knowledge about the job submission patterns, meaning that a cluster used to run a highly volatile number of short-lived jobs should adapt faster to the increase in requests and provision more instances at each monitoring iteration than a cluster used to run long-lived jobs. Other useful options include plotting the number of instances used by the cluster over time, the ability to allow the cluster a stabilisation time period during which the load balancer does not run, or automatically killing the cluster after a specific duration or when the job queue is empty.
 
-StarCluster also provides a bidding strategy for provisioning EC2 \textit{spot instances} that allowed the StarCluster team to reduce instance renting costs by approximately 60\% over longer periods of usage. Spot instances allow users to rent currently unexploited resources from idle machines for a significantly lower price than the standard flat rate, with the drawback that access may be suddenly terminated when the original owner needs the computing power back. The framework deals with the caveat of losing access to the machine due to the current spot price becoming lower than the maximum bid. However, the solution of simply rerunning the failed job on an on-demand instance might not be ideal in the context of long-running services or tasks.
+StarCluster also provides a bidding strategy for provisioning EC2 \textit{spot instances} that allowed the StarCluster team to reduce instance renting costs by approximately 60\% over longer periods of usage. Spot instances allow users to rent currently unexploited resources from idle machines for a significantly lower price than the standard flat rate, with the drawback that access may be suddenly terminated when the original owner needs the computing power back. The framework deals with the caveat of losing access to the machine due to the current spot price becoming higher than the maximum bid. However, the solution of simply rerunning the failed job on an on-demand instance might not be ideal in the context of long-running services or tasks.
 
 Despite that tight coupling with specific components of the AWS ecosystem is undesirable, the close integration does bring quite a few advantages in terms of storage flexibility. StarCluster can use S3 and EBS interchangeably, with data from mounted EBS volumes being instantly accessible throughout the cluster.
 
@@ -211,7 +211,7 @@ Despite that tight coupling with specific components of the AWS ecosystem is und
 
 Elasticluster \cite{Elasticluster} is another open-source project aiming at simplifying managing clusters on cloud platforms. Although not as popular as StarCluster, it has similar goals and a focus on simplicity and is more generic by supporting all of Amazon EC2, Google Cloud and OpenStack. We do not intend to call from Scala the Python API that Elasticluster provides, so we will focus on the functionality provided by the command-line tool.
 
-Given the more exhaustive approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems. It uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Along with the division of nodes in a cluster in \textit{frontend nodes} and \textit{compute nodes}, the use of Ansible playbooks allows combining different setups for master and slave nodes. Modularity is achieved by creating the specification of the different blocks of the cluster independently (\textit{login}, \textit{cloud}, \textit{setup}, \textit{cluster}, \textit{storage}) and simply assembling them to deploy the instances.
+Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, Slurm, Torque and PBS as scheduling systems. It uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Along with the division of nodes in a cluster in \textit{frontend nodes} and \textit{compute nodes}, the use of Ansible playbooks allows combining different setups for master and slave nodes. Modularity is achieved by creating the specification of the different blocks of the cluster independently (\textit{login}, \textit{cloud}, \textit{setup}, \textit{cluster}, \textit{storage}) and simply assembling them to deploy the instances.
 
 Although not as feature-rich as StarCluster, Elasticluster offers the basic cluster management commands and some extra customisation options:
 \begin{itemize}
@@ -225,11 +225,11 @@ cluster.
 	\item \verb|import| unzips and stores an exported cluster locally.
 \end{itemize}
 
-Although SGE is supported as in StarCluster, the main Ansible playbook we are interested is the one setting up SLURM, since it is the more popular, modern and actively maintained scheduling system. The SLURM playbook exports the \textit{/home} filesystem from the master node to all the slaves, ensuring shared storage. However, extra performance can be achieved by combining the SLURM playbook with the OrangeFS parallel virtual filesystem and mounting OrangeFS nodes as shared storage in the main cluster.
+Although SGE is supported as in StarCluster, the main Ansible playbook we are interested is the one setting up Slurm, since it is the more popular, modern and actively maintained scheduling system. The Slurm playbook exports the \textit{/home} filesystem from the master node to all the slaves, ensuring shared storage. However, extra performance can be achieved by combining the Slurm playbook with the OrangeFS parallel virtual filesystem and mounting OrangeFS nodes as shared storage in the main cluster.
 
 A disadvantage of Elasticluster is that it does not support the native storage systems for its supported cloud platform providers, since Amazon and Google cloud instances usually report much better performance when coupled with storage on the same platform. Instead, Elasticluster has default support for GlusterFS \cite{GlusterFS}, Ceph \cite{Ceph} and the OrangeFS \cite{OrangeFS} filesystem. Although these options are performant, they suffer from not being as widely popular as the previously mentioned ones.
 
-Elasticluster facilitates adding and removing nodes from the cluster, but does not provide the flexibility of StarCluster in dinamically controlling the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
+Elasticluster facilitates adding and removing nodes from the cluster, but does not provide the flexibility of StarCluster to dynamically control the load by provisioning instances on demand. This is a major disadvantage, since the responsibility for implementing the behaviour is transferred to the user, despite the fact that failure strategies would be more robust if incorporated within the tool itself.
 
 \subsection{CfnCluster}
 
@@ -237,8 +237,8 @@ CfnCluster is a cluster management tool built by Amazon specifically to support 
 
 The default installation is based on a provided AMI that ships with standard tools used for AWS administration. The configuration file allows extensive customisation and the possibility to enable various features needed for a job submission cluster:
 \begin{itemize}
-	\item A scheduler that can be any of SGE, SLURM, Torque and OpenLava\cite{OpenLava}.
-	\item Shared filesystem by mounting and EBS volume on all nodes at a user specified location. Read-write access to resourced owned by the user in S3 is also enabled.
+	\item A scheduler that can be any of SGE, Slurm, Torque and OpenLava\cite{OpenLava}.
+	\item Shared filesystem by mounting an EBS volume on all nodes at a user specified location. Read-write access to resourced owned by the user in S3 is also enabled.
 	\item Amazon Virtual Private Cloud (VPC) provisioning in order to operate a cluster whose networking layer is in complete control of the user and is in a logically isolated section of AWS.
 	\item Security groups for a cluster-level firewall.
 	\item Custom bootstrap actions that allow the user to run pre and post-startup configuration scripts on the master node.
@@ -246,14 +246,14 @@ The default installation is based on a provided AMI that ships with standard too
 
 Figure \ref{CfnNetworking} illustrates the sandboxing feature that isolates the master and compute nodes into subnets of the VPC.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 		\includegraphics[scale=0.7]{CfnNetworking.png}
 	\caption{Master and slave nodes isolated in two different Virtual Private Clouds \cite{CfnVPC}.}
 	\label{CfnNetworking}
 \end{figure}
 
-Elasticity is achieved through the interplay of various Amazon cloud services. On cluster creation, a CloudWatch alarm monitoring the number of pending jobs is created. When the alarm is triggered due to many queued jobs, instances are added by the Amazon Auto Scaling service up to a maximum defined by the \verb|max_queue_size| config parameter. On the other hand, idle machines are identified using a \verb|nodewatcher| daemon that monitors load and signals the possibility to reduce the compute fleet size to a minimum of \verb|min_queue_size| instances. Figure \ref{CfnScaling} demonstrates the processes described above.
+Elasticity is achieved through the interplay of various Amazon cloud services. On cluster creation, a CloudWatch alarm monitoring the number of pending jobs is created. When the alarm is triggered due to many queued jobs, instances are added by the Amazon Auto Scaling service up to a maximum defined by the \verb|max_queue_size| configuration parameter. On the other hand, idle machines are identified using a \verb|nodewatcher| daemon that monitors load and signals the possibility to reduce the compute fleet size to a minimum of \verb|min_queue_size| instances. Figure \ref{CfnScaling} demonstrates the processes described above.
 
 CfnCluster is a production-ready and reliable tool. However, it is completely one-dimensional since it focuses entirely on Amazon software and incurs extra costs by using many other AWS services, which could have otherwise been implemented as features of the tool itself. Although the costs of the individual cloud services supporting CfnCluster is not high, the overall cost is higher. An estimate for the added cost introduced by ClowdWatch alarms only is \$3.50 per month per instance, compared to the \$18.72 per month for renting a \verb|t2.small| instance \cite{AWSPricing}. This implies an added cost of 19\% that can by avoided by instead using StarCluster or Elasticluster.
 
@@ -339,47 +339,46 @@ blobStore.putBlob("test-container", blob);
 \end{listing}
 
 
-Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving to deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster, Starcluster or CfnCluster.
+Jclouds is a useful toolkit for managing computing and storage resources rented from different cloud providers without delving too deep into vendor libraries. However, it does not provide full cluster functionality, such as installing and configuring a job scheduling system or a shared filesystem. Implementing the whole cloud access layer using Jclouds would require duplicating a large part of the logic existing in tools already tested in production settings like Elasticluster, Starcluster or CfnCluster.
 
 \subsection{Mesos}
 
 Mesos \cite{Mesos} is an open-source cluster management system that provides abstractions of resources like processing power, memory or storage gathered from individual machines. Its aim is to offer a platform for creating safe, scalable and fault-tolerant distributed systems while programming against a simple API that allows treating an entire fleet of cloud instances as a shared supply of resources.
 
-Mesos can be described as a kernel for distributed systems. Its architecture is similar to the one of the Linux kernel, but revolves around working with distributed resources. Applications that take advantage of the APIs exposed by Mesos are known as frameworks and common examples include platforms for batch job scheduling, processing big data, managing data storage or hosting long-running jobs such as web servers. Figure \ref{MesosArch} shows the how Mesos mediates the access of high-level frameworks to fragmented low-level resources.
-
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 		\includegraphics[width=1\linewidth]{MesosArch.png}
 	\caption{Mesos architecture \cite{MesosArch}.}
 	\label{MesosArch}
 \end{figure}
 
+Mesos can be described as a kernel for distributed systems. Its architecture is similar to the one of the Linux kernel, but revolves around working with distributed resources. Applications that take advantage of the APIs exposed by Mesos are known as frameworks and common examples include platforms for batch job scheduling, processing big data, managing data storage or hosting long-running jobs such as web servers. Figure \ref{MesosArch} shows the how Mesos mediates the access of high-level frameworks to fragmented low-level resources.
+
 The key advertising points for Mesos are its scalability tested in commercial applications to up to 10.000 nodes and its layered architecture that supersedes classic resource scheduling and distribution systems that maintain the whole state of the underlying infrastructure. Instead, Mesos completely handles resource unification and only requires blocks on top of it to deal with primitives such as resource offers and describing tasks that need to be executed on slave nodes in a cluster.
 
 \vspace{4mm}
-\textbf{Chronos}
+\textbf{Chronos}		
 \vspace{1mm}
-
+ 
 Chronos \cite{Chronos} is a job scheduler that aims to be a modern redesign of the classic Unix utility Cron \cite{Cron}. Although Cron is mainly intended for performing single repetitive tasks and is typically used for scheduling system administration and maintenance tasks at regular time intervals, Chronos expands the feature space by also supporting job execution chains where jobs are triggered by finalisation of their dependencies. 
 
 Chronos is built as a framework on top of Mesos and it benefits from the fault tolerance and scalability provided by the underlying distributed kernel and resources.
 
-\begin{figure}[h]
+Figure \ref{ChronosArch} shows how Chronos fits in a system where it communicates with the Mesos master to allocate resources, which are then used to execute designated jobs. In the case when a Mesos cluster is deployed on AWS, the tasks leverage highly segregated compute power to perform big data processing using Elastic MapReduce \cite{EMR} and storage backed up by S3.
+
+Chronos can aggregate statistics regarding the status of scheduled jobs batches, as well as details on individual executions. It also provides a web dashboard that can be used to manage jobs interactively, but our interest lies along the REST API for automation purposes. The simplest way to deploy and configure Chronos along with Mesos is by using Mesosphere DC/OS \cite{DCOS}.
+
+\begin{figure}[H]
 	\centering
 		\includegraphics[width=0.9\linewidth]{ChronosArch.png}
-	\caption{Chronos architecture \cite{ChronosArch}.}
+	\caption{Chronos architecture \cite{Chronos}.}
 	\label{ChronosArch}
 \end{figure}
 
-Figure \ref{ChronosArch} shows how Chronos fits in a system where it communicates with the Mesos master to allocate resources, which are then used to execute designated jobs. In the case when a Mesos cluster is deployed on AWS, the tasks leverage highly segregated compute power to perform big data processing using Elastic MapReduce \cite{EMR} and storage backed up by S3.
-
-Chronos can aggregate statistics regarding the status of scheduled jobs batches, as well as details on individual executions. It also provides a web dashboard that can be used to manage jobs interactively, but our interest lies along the REST API for automation purposes. The simplest way to deploy and configure Chronos along with Mesos is by using Mesosphere DC/OS \footnote{Datacenter Operating System} \cite{DCOS}.
-
-\vspace{12mm}
 \textbf{Mesosphere DC/OS}
 \vspace{1mm}
-
-Mesosphere DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure shows the analogy between this setup and operating systems running on the Linux kernel.
+ 
+DC/OS is a distributed operating system using Mesos as its kernel and it facilitates the installation and orchestration of frameworks consuming the Mesos API. Figure \ref{DCOSArch} shows the analogy between this setup and operating systems running on the Linux kernel.
 
 \begin{figure}[h]
 	\centering
@@ -406,4 +405,4 @@ Although DC/OS would not add extra costs directly, it does require more powerful
 \label{DCOSPricing}
 \end{table}
 
-In conclusion DC/OS is a highly reliable tool for operating clusters in the cloud, but from cost-effectiveness perspective its features only shine when used at massive scale. In our use case, where jobs are more numerous rather than particularly CPU-intensive, Starcluster and Elasticluster are better candidates and can produce similar results for a lower investment.
+In conclusion, DC/OS is a highly reliable tool for operating clusters in the cloud, but from cost-effectiveness perspective its features only shine when used at massive scale. In our use case, where jobs are more numerous rather than particularly CPU-intensive, Starcluster and Elasticluster are better candidates and can produce similar results for a lower investment.
