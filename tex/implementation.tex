@@ -116,8 +116,8 @@ StarCluster relies on a configuration file instead of command line parameters to
 
 \begin{listing}[h]
 	\centering
-	\begin{minipage}{12cm}
-		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{text}
+	\begin{minipage}{9.4cm}
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.11,fontsize=\small,linenos]{text}
 [global]
 DEFAULT_TEMPLATE = jobcluster
 ENABLE_EXPERIMENTAL = True
@@ -125,9 +125,9 @@ ENABLE_EXPERIMENTAL = True
 [aws info]
 AWS_REGION_NAME = eu-west-1
 AWS_REGION_HOST = ec2.eu-west-1.amazonaws.com
-AWS_ACCESS_KEY_ID = AKIAJHJE7PZRI4AG26TQ
-AWS_SECRET_ACCESS_KEY = 359PuEAFpRgawFrKOBL8KhQEs1uF
-AWS_USER_ID = 837461874501
+AWS_ACCESS_KEY_ID = <access-key-id>
+AWS_SECRET_ACCESS_KEY = <secret-access-key>
+AWS_USER_ID = <user-id>
 
 [key starcluster-d4c9b13a]
 KEY_LOCATION = .starcluster/starcluster-d4c9b13a
@@ -142,7 +142,7 @@ MASTER_INSTANCE_TYPE = m3.medium
 NODE_INSTANCE_TYPE = m1.small
 		\end{minted}
 	\end{minipage}
-	\caption{Example StarCluster configuration.}
+	\caption{StarCluster configuration file.}
 	\label{StarClusterConfig}
 \end{listing}
 
@@ -185,11 +185,15 @@ To obtain a highly elastic cluster, users can also reduce the 3 minute lookback 
 
 \subsection{Spot Instances}
 
-Support for running a cluster consisting entirely of spot instances is leveraging the StarCluster for bidding for the desired type of worker instance. GridScale automates the bid decision by using a simple heuristic based on the current bids for the instance and the average for the past month. We assume that the correct price will always tend towards the average, so we choose a bid that is between the average and the current price. 
+We support running a spot cluster by leveraging StarCluster to bid for the desired type of worker instances. An important consideration is that only slave nodes in the cluster are allowed to be spots, since we can easily deal with their downscaling by requeuing failed jobs. The master is always a dedicated on-demand instance, because having it suddenly killed would require restarting the whole cluster.
 
-If the current price is lower than the average, then we are ahead of the bidders that will soon lose their machines as prices will rise. In the opposite scenario, we know that the equilibrium price is lower than the current one, so we can afford to bid less than the market price while still remaining confident to be competitive.
+GridScale automates the spot bidding decision by using a simple heuristic based on the current bids for the instance and the average for the past month. We assume that the correct price will always tend towards the average, so we choose a bid depending on the relation between the current price and the average. 
 
-Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to make a profit, since prices for spot instances are already approximately 6 times lower\footnote{Prices as of June 2016 for instances in US East} than for regular on-demand ones, as seen in Table \ref{SpotPricing}.
+If the current market price is lower than the average, then we are ahead of the bidders that will soon lose their machines as prices will rise. In the opposite scenario, we know that the equilibrium price is lower than the current one, so we can afford to bid less than the market price while still remaining confident to be competitive.
+
+If the current market price is lower than the average, then we are safe to use the instance for at least a couple of hours by simply bidding the average value, since spot prices fluctuate at a relatively steady rate. In the opposite scenario, we bid the market price plus an additional 10\% to account for unexpected change, but we assume that the price will tend towards the average.
+
+Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to reduce renting costs, because prices for spot instances are already approximately 6 times lower\footnote{Prices as of June 2016 for instances in US East} than for regular on-demand ones, as seen in Table \ref{SpotPricing}. Section \ref{OpenMOLEAWSSection} also details how OpenMOLE can gracefully deal with spot instances being lost, so designing a complicated strategy to optimise bidding only has diminishing returns.
 
 \begin{table}[h]
 \centering
@@ -205,12 +209,131 @@ Overall, the strategy is rather conservative. We believe that no aggressive bids
 \label{SpotPricing}
 \end{table}
 
-\subsection{GCE Version}
+\section{OpenMOLE AWS Environment} \label{OpenMOLEAWSSection}
 
-\section{OpenMOLE AWS Environment}
+The \verb|AWSEnvironment| in OpenMOLE adapts the GridScale \verb|AWSJobService| to the requirements of OpenMOLE and decorates it with extra batch submission and failure recovery capabilities. 
 
-\subsection{Resource Mapper}
+Since user credentials and preferences are passed directly to the GridScale module, the environment's constructor parameters are, in the simplest case when default instance types are used, identical to those of the job service. Listing \ref{AWSEnvironment} shows how we modify the simple workflow from Listing \ref{SimpleWorkflow} to run on an AWS cluster instead of the local machine.
 
-\todo[inline]{Talk about how the NFS of the job service enables sharing the runtime across execution nodes.}
-\todo[inline]{Talk about it deals automatically with job failure since OpenMOLE has a submission mechanism that simply submits the job again if it doesn't get results - so not affected by downsizing.}
-\todo[inline]{Mechanism used to detect jobs are done based on the message queue}
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{11.4cm}
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.15,fontsize=\small,linenos]{scala}
+val i = Val[Int]
+val res = Val[Int]
+
+val exploration = ExplorationTask(i in (1 to 100 by 1))
+
+val model =
+  ScalaTask("val res = i * i") set (
+    inputs += i,
+    outputs += (i, res)
+  )
+
+val env = AWSEnvironment(
+  region = "eu-west-1",
+  awsUserName = "adrian",
+  awsUserId = "434676269080",
+  awsKeypairName = "gridscale",
+  awsCredentialsPath = "/Users/adrian/.aws/credentials.csv",
+  privateKeyPath = "/Users/adrian/.ssh/id_rsa",
+  clusterSize = 8
+)
+  
+exploration -< (model on env hook ToStringHook())
+		\end{minted}
+	\end{minipage}
+	\caption{Workflow running on an AWS cluster.}
+	\label{AWSEnvironment}
+\end{listing}
+
+An important feature of the cluster built using GridScale is that it provides a network shared \verb|/home| directory that is mounted on every node. This facilitates the runtime distribution in OpenMOLE, since it only needs to be copied remotely once, after which every machine can use it to run tasks in their packaged context. Section \ref{FutureWorkSection} discusses a future improvement that will allow us to avoid transferring the runtime remotely for every cluster instantiation.
+
+\subsection{Job Service Lifecycle}
+
+The GridScale \verb|AWSJobService| was designed specifically to allow for its lifecycle to be managed externally. In the OpenMOLE integration, we take advantage of this feature and turn off the entire environment based on events occurring in the message queue.
+
+Specifically, we do not terminate the job service immediately after all the initial jobs have been consumed, but instead track all types of events occurring in the \verb|JobManager| allocated to the environment and only kill the cluster once all potentially failed jobs have been successfully rerun, results have been copied and assembled back on the user's machine.
+
+\subsection{Spot Clusters}
+
+OpenMOLE's mechanism for job submission and dealing with unexpected failures of execution nodes plays well with the concept of spot clusters and automatic scaling of the number of worker nodes.
+
+While adding or removing nodes based on the load in the cluster does not impact the runs of any jobs because only machines that have already been idle long enough are removed, tasks running on spot instances can be unexpectedly killed when the market price of the instance rises over the current bid. This case is dealt with by continuously polling for job results and resubmitting the job if the target machine is unreachable or the job has been cancelled for external reasons. The new submission is automatically picked up by the message queue and directed to one of the healthy nodes.
+
+\subsection{Resource Mapping}
+
+Although the default approach followed by OpenMOLE for running workflows is to try providing sane defaults for users without deep technical expertise, one of parameters that can be specified when constructing an environment is \verb|OpenMOLEMemory|, which indicates the amount of memory that the workflow is expected to need.
+
+For the \verb|AWSEnvironment|, resources are allocated in terms of the number and types of instances chosen to form the underlying cluster, so we allow users unwilling to rely on the default \verb|m3.medium| master and \verb|m1.small| slave nodes to specify their own preferences for the cluster machines.
+
+Additionally, to allow seamless transition from workflows that were previously being specified using the memory requirements to cloud-based executions, we introduce a \textit{resource mapper} that translates the memory specification to a set of instances covering the desired configuration.
+
+\section{Other Cloud Platforms}
+
+Although the main focus of the implementation was to provide a fully functional system for running OpenMOLE experiments on AWS, the technique we used is not tied to a single cloud provider. Command line tools like CfnCluster, DC/OS and Elasticluster are similar with StarCluster in terms of interfaces and capabilities, so the cluster configuration layer can easily be replaced.
+
+Additionally, most of the behaviour and structure of the AWS GridScale module and OpenMOLE environment can be extracted to interfaces for cloud services, especially since cloud providers themselves offer similar functionality. For instance, the \verb|AWSJobService| can be split in multiple platform agnostic components that can be combined in a generic \verb|CloudJobService|:
+
+\begin{itemize}
+	\item The coordinator node is already created using Jclouds, so it can be deployed to many commercial clouds.
+	\item All the mechanisms for transferring the OpenMOLE runtime remotely, packaging jobs and configuring SSH connections to nodes in the cluster only require access to a shell, so they do not depend on where resources are provisioned from.
+	\item The job submission controller can delegate responsibility for translating and monitoring jobs to existing implementations such as the \verb|SGEJobService|, the \verb|SLURMJobService| or others based on the requirements of the underlying cluster.
+	\item OpenMOLE cloud environments are virtually identical, since resource access in encapsulated in the GridScale modules with matching interfaces. Once multiple providers are supported, we only need a single cloud environment that instantiates different job services.
+\end{itemize}
+
+\vspace{-1mm}
+\subsection{GCE Support}
+
+Taking Google Compute Engine as an example, we outline the main aspects that need to be considered when adding support for a new cloud platform. We do not yet provide a full working implementation for GCE, but we analyse the main differences and components that need to be changed in comparison with AWS.
+
+The \verb|GCEJobService| acts as the interface of the GridScale GCE module and it needs to provide the same public methods as the \verb|AWSJobService|. The implementation details of starting and stopping the service depend on the tool chosen to manage the underlying cluster, while the \verb|submit|, \verb|cancel|, \verb|state| and \verb|purge| calls can be forwarded to the scheduler controlling the cluster.
+
+Both Elasticluster and Mesosphere DC/OS provide primitives for creating and managing a GCE cluster, but we dismiss DC/OS due to the more elevated costs incurred by the usage of more powerful instances. On the other hand, Elasticluster's operating paradigm makes it very similar to StarCluster, with a few minor differences pointed out in Section \ref{ElasticlusterBackground}. 
+
+Since we want to preserve the assumption of no configuration being necessary on behalf of the user and Elasticluster is a command line tool, it needs to be run by a remote coordinator node. The proxy node is started using the Jclouds API and SSH pairing between the local machine and the coordinator is performed by importing an SSH keypair associated with a service accounts. These serve a similar purpose as Amazon IAM roles and essentially regulate programmatic access to resources associated with the account.
+
+The Elasticluster configuration file is based on the interplay between different Ansible playbooks and also needs to be generated dynamically. The example file shown in Listing \ref{ElastiClusterConfig} exposes similarities with StarCluster. It begins by specifying the details of the desired cloud provider, login details and Ansible playbook that provides a SLURM installation and an NFS-shared storage volume. Line 19 bring the components together and assembles a cluster with a single master node acting as an SSH entry point and two worker nodes.
+
+\begin{listing}[h]
+	\centering
+	\begin{minipage}{8cm}
+		\begin{minted}[frame=single,framesep=2mm,baselinestretch=1.11,fontsize=\small,linenos]{text}
+[cloud / google]
+provider = google
+gce_client_id = <client-id>
+gce_client_secret = <client-secret>
+gce_project_id = <project-id>
+zone = europe-west1-b	
+
+[login / google]
+image_user = <google-username>
+user_key_name = elasticluster
+user_key_private = ~/.ssh/id_rsa
+user_key_public = ~/.ssh/id_rsa.pub
+
+[setup / ansible-slurm]
+provider = ansible
+frontend_groups = slurm_master
+compute_groups = slurm_clients
+
+[cluster / gridscale-cluster]
+cloud = google
+login = google
+setup_provider = ansible-slurm
+image_id = ubuntu-1404-trusty-v20160509a
+flavor = f1-micro
+frontend_nodes = 1
+compute_nodes = 2
+ssh_to = frontend
+		\end{minted}
+	\end{minipage}
+	\caption{Elasticluster configuration file.}
+	\label{ElastiClusterConfig}
+\end{listing}
+
+After the cluster is created, the job submission workload can be forwarded to a \verb|SLURMJobService|. A caveat is that Elasticluster does not provide a built-in way of expanding or shrinking the cluster depending on the load, but this can be implemented using the existing calls for adding and removing individual nodes.
+
+One advantage of running clusters on GCE is that instance initialisation times tend to be lower compared to AWS, resulting in a faster startup of the the whole system. GCE does not have spot instances that vary in renting costs depending on demand. Instead, it introduces the concept of preemptible instances \cite{Preemptible}, which are even 70\% cheaper than normal ones can be interrupted under specific conditions.
+
+A \verb|GCEEnvironment| in OpenMOLE would wrap the job service and is not even necessary in the case of factoring out a generic \verb|CloudEnvinronment| that receives the required job service as a parameter. However, the resource mapping feature needs to be overriden in order to account for Google-specific instance types and prices.

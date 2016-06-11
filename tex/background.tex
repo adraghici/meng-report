@@ -207,11 +207,11 @@ StarCluster also provides a bidding strategy for provisioning EC2 \textit{spot i
 
 Despite that tight coupling with specific components of the AWS ecosystem is undesirable, the close integration does bring quite a few advantages in terms of storage flexibility. StarCluster can use S3 and EBS interchangeably, with data from mounted EBS volumes being instantly accessible throughout the cluster.
 
-\subsection{Elasticluster}
+\subsection{Elasticluster} \label{ElasticlusterBackground}
 
 Elasticluster \cite{Elasticluster} is another open-source project aiming at simplifying managing clusters on cloud platforms. Although not as popular as StarCluster, it has similar goals and a focus on simplicity and is more generic by supporting all of Amazon EC2, Google Cloud and OpenStack. We do not intend to call from Scala the Python API that Elasticluster provides, so we will focus on the functionality provided by the command-line tool.
 
-Given the more generic approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems. It uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Along with the division of nodes in a cluster in \textit{frontend nodes} and \textit{compute nodes}, the use of Ansible playbooks allows combining different setups for master and slave nodes. Modularity is achieved by creating the specification of the different blocks of the cluster independently (\textit{login}, \textit{cloud}, \textit{setup}, \textit{cluster}, \textit{storage}) and simply assembling them to deploy the instances.
+Given the more exhaustive approach, Elasticluster makes fewer assumptions about the intentions of the user and requires more details to be set via the configuration file. It supports all of SGE, SLURM, Torque and PBS as scheduling systems. It uses Ganglia \cite{Ganglia} for monitoring and allows transparent configuration of its toolkit via Ansible \cite{Ansible}. Along with the division of nodes in a cluster in \textit{frontend nodes} and \textit{compute nodes}, the use of Ansible playbooks allows combining different setups for master and slave nodes. Modularity is achieved by creating the specification of the different blocks of the cluster independently (\textit{login}, \textit{cloud}, \textit{setup}, \textit{cluster}, \textit{storage}) and simply assembling them to deploy the instances.
 
 Although not as feature-rich as StarCluster, Elasticluster offers the basic cluster management commands and some extra customisation options:
 \begin{itemize}

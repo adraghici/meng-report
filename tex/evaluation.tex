@@ -1,14 +1,10 @@
 \chapter{Evaluation} \label{EvaluationChapter}
 
-Check these 2 links for unlimiting the number of SSH connections: http://www.hypertable.com/documentation/misc/ssh_maxstartups/ and http://www.manpagez.com/man/5/sshd_config/
-MaxSessions and MaxStartups
-
-
-\section{Coordinator Node Overhead} \label{CoordinatorOverheadSection}
-
-\todo[inline]{Talk about the performance overhead introduced by the coordinator / T1.MICRO instance}
+\todo[inline]{Not worth ever using reserved machines - 12\% cheaper if reserved 3 years in advance}
 
 \section{GridScale Benchmarks}
+
+\todo[inline]{Using instances with really good network connectivity offers diminishing returns, as at some point the latency rather than the bandwidth becomes the dominant factor}
 
 \todo[inline]{Mention not allowing upscaling for the load balancer, because it will just blow up the size since we're just testing the submission / cancelling times}
 
@@ -21,6 +17,14 @@ MaxSessions and MaxStartups
 \todo[inline]{Maybe show a table of the instances to indicate how the memory / CPU / prices vary and why we chose those for test}
 
 \todo[inline]{Make the point that it is expected for experiments to be slower on the cloud, since academic grids and local clusters usually benefit from way above average machines or even supercomputers, which are clearly unaffordable in a commercial setting. So being in the same order of magnitude is alright}
+
+\section{Configuration Requirements}
+
+\todo[inline]{Ease of use, especially using resource mapping and being able to keep the memory requirement parameter}
+
+\section{Coordinator Node} \label{CoordinatorOverheadSection}
+
+\todo[inline]{Talk about the performance overhead introduced by the coordinator / T1.MICRO instance}
 
 As described in the project plan, we plan to develop the project incrementally, by having an early functional implementation that we can afterwards iteratively improve. Since we assume a stable, albeit limited, product at each iteration, we will also be able to perform evaluation at each stage. The results of the benchmarks should guide the further development of the project by helping us to identify non-optimal solutions, bugs, or negative user feedback.
 
