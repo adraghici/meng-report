@@ -17,6 +17,7 @@
 \usepackage{float}
 \usepackage{color}
 \usepackage{caption}
+\usepackage{adjustbox}
 \usepackage{url}
 \usepackage{cite}
 \usepackage[parfill]{parskip}
@@ -30,6 +31,7 @@
 \usepackage{todonotes}
 \usepackage{chngcntr}
 \usepackage{enumitem}
+\usepackage{footnote}
 \usepackage[nottoc,notlot,notlof]{tocbibind}
 % Tables
 \usepackage{booktabs}
@@ -95,3 +97,7 @@
 
 % Section heder spacing
 \titlespacing*{\subsubsection}{0pt}{0.5\baselineskip}{0.2\baselineskip}
+
+% Footnote in table
+\makesavenoteenv{tabular}
+\makesavenoteenv{table}

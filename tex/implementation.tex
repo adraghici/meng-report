@@ -47,7 +47,7 @@ val awsService = AWSJobService(AWSJobService.Config(
     awsUserName = "adrian",
     awsCredentialsPath = "/Users/adrian/.aws/credentials.csv",
     awsUserId = "434676269080",
-    awsKeypairName = "gridscale",
+    awsKeypairName = "openmole",
     privateKeyPath = "/Users/adrian/.ssh/id_rsa",
     clusterSize = 1))
 
@@ -106,7 +106,7 @@ In order to start the coordinator node, Jclouds needs to authenticate the user. 
 
 Apart from using the IAM credentials to make EC2 API calls, we are also opening SSH channels to deliver commands to the coordinator. To do this we need to register the SSH key we are using to initiate the connection to the coordinator on AWS. This is achieved by importing the public key on AWS and giving it a name. The \verb|awsKeypairName| associated with the private key is then always mentioned when openning an SSH connection.
 
-Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provisionned for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it. Further details are discussed in Section \ref{CoordinatorOverheadSection}.
+Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provisionned for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it.
 
 \vspace{3mm}
 \textbf{StarCluster Configuration}
@@ -198,7 +198,7 @@ If the current market price is lower than the average, then we are ahead of the 
 
 If the current market price is lower than the average, then we are safe to use the instance for at least a couple of hours by simply bidding the average value, since spot prices fluctuate at a relatively steady rate. In the opposite scenario, we bid the market price plus an additional 10\% to account for unexpected change, but we assume that the price will tend towards the average.
 
-Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to reduce renting costs, because prices for spot instances are already approximately 6 times lower than for regular on-demand ones as of June 2016 in US East, as shown in Table \ref{SpotPricing}. Section \ref{OpenMOLEAWSSection} also details how OpenMOLE can gracefully deal with spot instances being lost, so complicated strategy to optimise bidding only has diminishing returns.
+Overall, the strategy is rather conservative. We believe that no aggressive bids are needed to reduce renting costs, because prices for spot instances are already approximately 6 times lower than for on-demand ones as of June 2016 in US East, as shown in Table \ref{SpotPricing}. Section \ref{OpenMOLEAWSSection} also details how OpenMOLE can gracefully deal with spot instances being lost, so complicated strategy to optimise bidding only has diminishing returns.
 
 \begin{table}[h]
 \centering
@@ -239,7 +239,7 @@ val env = AWSEnvironment(
   region = "eu-west-1",
   awsUserName = "adrian",
   awsUserId = "434676269080",
-  awsKeypairName = "gridscale",
+  awsKeypairName = "openmole",
   awsCredentialsPath = "/Users/adrian/.aws/credentials.csv",
   privateKeyPath = "/Users/adrian/.ssh/id_rsa",
   clusterSize = 8
