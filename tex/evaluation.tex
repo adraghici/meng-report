@@ -71,15 +71,15 @@ To ensure a better estimation of the real duration, we repeat each run 10 times 
 \label{InstancePrices}
 \end{table}
 
-At the moment, not all GridScale modules support batching commands sent to the submission controller via multiple sessions within the same SSH connection, so we consider two main scenarios based on whether operations to the master are transmitted using only one or more sessions per TCP connection.
+At the moment, not all GridScale modules support batching commands sent to the submission controller via multiple sessions within the same SSH connection, so we consider two main scenarios based on whether operations to the master are transmitted using only one or more sessions.
 
 \subsection{Results}
 
 In the case of a single session per connection, we also compare the 5 master nodes of the GridScale SGE cluster with the manager of the HTCondor in DoC. This is an Intel Xeon E5-2470 with 32GB RAM and 16 virtual cores running at 2.3GHz.
 
-Figure \ref{SingleSession} shows that submissions to the HTCondor server are significantly faster for all instructions, partly due to the high bandwidth on the local network, but mostly thanks to the very low latency, which reduces the time needed to establish an SSH connection. While the \verb|m3.medium| clearly lags behind given its low bandwidth, the three high-CPU \verb|c3| instances exhibit close performance and are faster than the high-throughput \verb|m1.xlarge| instance, indicating that bandwidth only has diminishing returns and the CPU is more important, while latency remains a constant factor.
+Figure \ref{SingleSession} shows that submissions to the HTCondor server are significantly faster for all instructions, partly due to the high bandwidth on the local network, but mostly thanks to the very low latency, which reduces the time needed to establish an SSH connection. 
 
-\begin{figure}[H]
+\begin{figure}[h]
 	\centering
 	\minipage{0.49\textwidth}
 		\subfloat[][]{\includegraphics[width=1\linewidth]{GridScaleSubmit.png}}
@@ -90,28 +90,111 @@ Figure \ref{SingleSession} shows that submissions to the HTCondor server are sig
 	\minipage{0.49\textwidth}
 		\subfloat[][]{\includegraphics[width=1\linewidth]{GridScaleCancel.png}}
 	\endminipage \hfill
-	\caption{Comparison for submission, query and cancellation times for an increasing number of jobs on different types of master nodes.}
+	\caption{Comparison for submission, query and cancellation times in the case of only one session per SSH connection.}
 	\label{SingleSession}
 \end{figure}
 
+While the \verb|m3.medium| clearly lags behind given its low bandwidth, the three high-CPU \verb|c3| instances exhibit close performance and are faster than the high-throughput \verb|m1.xlarge| instance, indicating that bandwidth only has diminishing returns and the CPU is more important, while latency remains a constant factor.
+
+
+When connections to master nodes are allowed to open multiple sessions, Figure \ref{MultiSession}  shows the rate of commands per second improves dramatically across the board. For each of the three commands, multi-session SSH connections bring 15x improvements to the execution time. The \verb|c3| instances continue to exhibit similar performance, which is mildly surprising due to the vastly superior specifications of the \verb|c3.8xlarge| instance.
+
+\begin{figure}[h]
+	\centering
+	\minipage{0.49\textwidth}
+		\subfloat[][]{\includegraphics[width=1\linewidth]{GridScaleSubmitAsync.png}}
+	\endminipage \vfill
+	\minipage{0.49\textwidth}
+		\subfloat[][]{\includegraphics[width=1\linewidth]{GridScaleQueryAsync.png}}
+	\endminipage \hfill
+	\minipage{0.49\textwidth}
+		\subfloat[][]{\includegraphics[width=1\linewidth]{GridScaleCancelAsync.png}}
+	\endminipage \hfill
+	\caption{Comparison for submission, query and cancellation times in the case of multiple sessions per SSH connection.}
+	\label{MultiSession}
+\end{figure}
+
+In this case, we are comparing the command latencies with the Slurm master node, which has the same characteristics as the HTCondor one. Despite being on the local network when the benchmark was run, it responds to \textit{cancel} requests slower than the \verb|c3| instances.
+
 \section{OpenMOLE Workflow Benchmarks}
 
-On the OpenMOLE level, we are interested in how the application behaves as a whole when distributing real algorithms over a cloud cluster. In this section, we look at the performance of the system when on
+On the OpenMOLE level, we are interested in how the application behaves as a whole when distributing real algorithms over a cloud cluster. In this section, we look at the performance of the system when engaged in running two full different workflows with different underlying cluster configurations. We then estimate the cost of running each of the workflows.
 
-\subsection{Pi Computation}
+\subsection{$\pi$ Computation}
+
+The algorithm presented in Appendix \ref{Pi}, Listing \ref{PiComputation} computes a Monte-Carlo estimation of $\pi$. It first computes the result of 100 parallel executions of the \verb|ScalaTask| starting each time from a generated random seed, after which it collects the results and averages them to give a final estimation. This is still a simple algorithm, but more substantial than the ones we have presented so far.
+
+Table \ref{PiTable} summarises the results of running the algorithm 10 times with different types of master and worker nodes, while also using different number of estimations to obtain the final result. Note that each estimation corresponds to a random seed in the workflow. The total cost of each run is computed using the prices in Table \ref{InstancePrices} and we also show prices for on-demand cluster, even if all the experiments were carried out using full spot clusters.
+
+\begin{table}[h]
+\centering
+\begin{adjustbox}{width=1\textwidth}
+\begin{tabular}{cccccccc}
+ &  &  &  &  &  & \multicolumn{2}{c}{\textbf{Total Price (\$)}} \\ \cline{7-8} 
+\textbf{} & \textbf{Master Instance} & \textbf{Worker Instance} & \textbf{Worker Nodes} & \textbf{Estimations} & \multicolumn{1}{c|}{\textbf{Time (s)}} & \multicolumn{1}{c|}{\textbf{Spot}} & \multicolumn{1}{c|}{\textbf{On-Demand}} \\ \cline{2-8} 
+\multicolumn{1}{c|}{1} & \multicolumn{1}{c|}{m1.medium} & \multicolumn{1}{c|}{m1.small} & \multicolumn{1}{c|}{1} & \multicolumn{1}{c|}{200} & \multicolumn{1}{c|}{5054} & \multicolumn{1}{c|}{0.04} & \multicolumn{1}{c|}{0.284} \\ \cline{2-8} 
+\multicolumn{1}{c|}{2} & \multicolumn{1}{c|}{c1.medium} & \multicolumn{1}{c|}{m1.small} & \multicolumn{1}{c|}{1} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{3565} & \multicolumn{1}{c|}{0.02} & \multicolumn{1}{c|}{0.142} \\ \cline{2-8} 
+\multicolumn{1}{c|}{3} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{4} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{929} & \multicolumn{1}{c|}{0.499} & \multicolumn{1}{c|}{2.862} \\ \cline{2-8} 
+\multicolumn{1}{c|}{4} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{1032} & \multicolumn{1}{c|}{0.671} & \multicolumn{1}{c|}{3.818} \\ \cline{2-8} 
+\multicolumn{1}{c|}{5} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{915} & \multicolumn{1}{c|}{0.671} & \multicolumn{1}{c|}{3.818} \\ \cline{2-8} 
+\multicolumn{1}{c|}{6} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{2820} & \multicolumn{1}{c|}{0.671} & \multicolumn{1}{c|}{3.818} \\ \cline{2-8} 
+\multicolumn{1}{c|}{7} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{792} & \multicolumn{1}{c|}{1.015} & \multicolumn{1}{c|}{5.73} \\ \cline{2-8} 
+\multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{c3.4xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{4} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{1142} & \multicolumn{1}{c|}{0.34} & \multicolumn{1}{c|}{1.909} \\ \cline{2-8} 
+\multicolumn{1}{c|}{9} & \multicolumn{1}{c|}{c3.4xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{100} & \multicolumn{1}{c|}{964} & \multicolumn{1}{c|}{0.512} & \multicolumn{1}{c|}{2.865} \\ \cline{2-8} 
+\multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{c3.4xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{16} & \multicolumn{1}{c|}{1000} & \multicolumn{1}{c|}{4827} & \multicolumn{1}{c|}{1.712} & \multicolumn{1}{c|}{9.554} \\ \cline{2-8} 
+\end{tabular}
+\end{adjustbox}
+\caption{Summary of various runs of the $\pi$ computation algorithm, including the price of each execution.}
+\label{PiTable}
+\end{table}
+
+We can already observe large differences in execution times between runs with similar cluster configurations. For example, run 6 is over 300\% slower than run 5, given identical instance types and the same number of jobs. By inspecting the load of the system during the workflow run, we observed that the available CPU and memory often fluctuate aggressively without the instances being flooded with requests. We partially attribute this to the fact that in the end we are working with virtual instances that share the same physical machine.
+
+Very long runs like 7 occur occasionally when instances in the cluster are not reliable. An occasional pattern occurring in particular with spot clusters was instances rejecting to receive jobs due to insufficient disk space, although we are not storing anything specifically on the machines themselves and the working directory is always set to \verb|/home|, the volume shared on the network by StarCluster.
+
+Since each run spends the first approximately 330 - 380 seconds setting up the cluster, we consider total running times of about 1000 seconds acceptable. This is because the simple task executions used here actually require the same networking resources as genuinely CPU-intensive ones to reach their destinations execution nodes, so more complicated workflows are not necessarily more time-consuming.
 
 \subsection{Random Forest}
 
+The random forest workflow in Appendix \ref{Forest}, Figure \ref{RandomForest} explores the parameters of the \verb|forest.py| script, which performs random forest image classification \cite{RandFor} to distinguish 3 types of leaves. The Python script is packaged as a CARE task and receives as parameters the location of the dataset, the number of trees in a forest and the depth of each tree. The output of the script is a single floating point number representing the precision of the k-fold trained classifier.
+
+As before, we ran the workflow multiple times with different configurations, but eventually only chose the results in Table \ref{ForestTable} for display.
+
+\begin{table}[h]
+\centering
+\begin{adjustbox}{width=1\textwidth}
+\begin{tabular}{cccccccc}
+ &  &  &  &  &  & \multicolumn{2}{c}{\textbf{Total Price (\$)}} \\ \cline{7-8} 
+\textbf{} & \textbf{Master Instance} & \textbf{Worker Instance} & \textbf{Worker Nodes} & \textbf{Generated Jobs} & \multicolumn{1}{c|}{\textbf{Time (s)}} & \multicolumn{1}{c|}{\textbf{Spot}} & \multicolumn{1}{c|}{\textbf{On-Demand}} \\ \cline{2-8} 
+\multicolumn{1}{c|}{1} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{4} & \multicolumn{1}{c|}{337} & \multicolumn{1}{c|}{3219} & \multicolumn{1}{c|}{0.499} & \multicolumn{1}{c|}{2.862} \\ \cline{2-8} 
+\multicolumn{1}{c|}{2} & \multicolumn{1}{c|}{c3.8xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{337} & \multicolumn{1}{c|}{2625} & \multicolumn{1}{c|}{0.671} & \multicolumn{1}{c|}{3.818} \\ \cline{2-8} 
+\multicolumn{1}{c|}{3} & \multicolumn{1}{c|}{c3.4xlarge} & \multicolumn{1}{c|}{c3.xlarge} & \multicolumn{1}{c|}{8} & \multicolumn{1}{c|}{337} & \multicolumn{1}{c|}{4117} & \multicolumn{1}{c|}{1.024} & \multicolumn{1}{c|}{5.73} \\ \cline{2-8} 
+\end{tabular}
+\end{adjustbox}
+\caption{Summary of various runs of the random forest classifier training, including the price of each execution.}
+\label{ForestTable}
+\end{table}
+
+Here we can notice that, despite only having 337 generated jobs to execute, the tasks were indeed more time consuming, which is in accordance with the training of the classifier in the Python script. It would probably be expected that the second cluster configuration is the fastest one, but it is interesting to compare run 1 and 3. This leads us to the conclusion that a powerful instance as the master is indicated to having a larger pool of workers, since the master can easily become a bottleneck for very demanding workflows.
+
 \section{Spot Clusters}
+
+Throughout this section, we have learned that clusters consisting entirely of spot instances are not always reliable. Although we can potentially deal with instances being revoked, this has only happened once during the whole development process and OpenMOLE already has mechanisms to protect from sudden job failures and non-critical instances failing.
+
+However, we do not recommend ever letting the master node of a cluster be a spot instance, the biggest concern being in fact the potential flakiness on spots. Theoretically, spots are advertised as being the same as on-demand instances, but in practice we have found them to be more unreliable.
+
+Despite all the potential issues with spot instances, we do recognize that they offer great value and workflows run on spot clusters are, as seen in Table \ref{PiTable}, on average between 5 and 8 times cheaper than on-demand clusters. This is particularly true if generating many short-lived jobs whose recovery in case of failure is cheap.
+
+Another issue discovered during the evaluation was that Amazon limits by default the number of spot instances a user can bid for or run simultaneously to 20. This is, however, not a hard requirement and can be changed by negotiating directly with the provider.
 
 \section{Challenges and Limitations}
 
-\todo[inline]{Amazon cagey with number of spots - can contact them to increase it - The total number of Spot instance requests 20 per region}
+The evaluation of our implementation on both the OpenMOLE and the GridScale level was influenced by several factors. We did manage to overcome some of the problems, while others issues require deeper changes in the structure of the project in order to be solved.
 
-\todo[inline]{Results influenced by the fact that we couldn't really use the best available machines due to budget. Usually, benchmarks are run on really powerful machines.}
+One of the main drawbacks of our evaluation process was that it required extensive manual intervention and supervision. Although we were able to write a framework that automatically collects data about job submission statistics as part of GridScale, the holistic evaluation at the OpenMOLE layer was mostly performed using either the console mode of the command line tool or the web interface. This did not provide us with too much control over testing scenarios and we were limited to running the application as a simple user. More granular access to the internals of the application would have enabled us to more easily identify bottlenecks.
 
-\todo[inline]{Make the point that it is expected for experiments to be slower on the cloud, since academic grids and local clusters usually benefit from way above average machines or even supercomputers, which are clearly unaffordable in a commercial setting. So being in the same order of magnitude is alright}
+A challenge adjacent to the first point we made was the lack of integration testing present in both GridScale and OpenMOLE. Although setting up an integration testing framework is an inherently hard problem in the context of applications dealing with distributed systems, the presence of a reliable test suite would certainly increase the confidence of the developers in the functional correctness of the product and eventually speed up development cycles.
 
-\todo[inline]{Not worth ever using reserved machines - 12\% cheaper if reserved 3 years in advance}
+One of the reasons for which the experiment results may be seriously skewed is the volatility of Amazon's EC2 resource pool. Especially in the case of spot instances, which we have used almost exclusively for experiments, differences in performance can become a rather serious problem when trying to diagnose issues with the application.
 
-\todo[inline]{Show performances of all instances used to experiment with}
+Our comparison with job submission systems supported by the Department of Computing may also suffer from inaccuracies. In fact, this is a more general problem, since comparing systems relying on different resource pools will always cause slight differences. One concrete example is the comparison between workflows run on an EC2 cluster and on DoC's Slurm or HTCondor deployment. The average machine in the department is the rough equivalent of the \verb|c3.4xlarge|, the second most powerful machine we rented for testing purposes. The network speed of the local connection also generally skews results against the cloud approach, although we always accounted for it when trying to explain performance differences.0
