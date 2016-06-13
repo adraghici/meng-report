@@ -75,7 +75,9 @@ At the moment, not all GridScale modules support batching commands sent to the s
 
 \subsection{Results}
 
-In the case of a single session per connection, we also compare the 5 master nodes of the GridScale SGE cluster with the manager of the HTCondor in DoC. This is an Intel Xeon E5-2470 with 32GB RAM and 16 virtual cores running at 2.3GHz. 
+In the case of a single session per connection, we also compare the 5 master nodes of the GridScale SGE cluster with the manager of the HTCondor in DoC. This is an Intel Xeon E5-2470 with 32GB RAM and 16 virtual cores running at 2.3GHz.
+
+Figure \ref{SingleSession} shows that submissions to the HTCondor server are significantly faster for all instructions, partly due to the high bandwidth on the local network, but mostly thanks to the very low latency, which reduces the time needed to establish an SSH connection. While the \verb|m3.medium| clearly lags behind given its low bandwidth, the three high-CPU \verb|c3| instances exhibit close performance and are faster than the high-throughput \verb|m1.xlarge| instance, indicating that bandwidth only has diminishing returns and the CPU is more important, while latency remains a constant factor.
 
 \begin{figure}[H]
 	\centering
@@ -92,13 +94,13 @@ In the case of a single session per connection, we also compare the 5 master nod
 	\label{SingleSession}
 \end{figure}
 
-Figure \ref{SingleSession} shows that submissions to the HTCondor server are significantly faster for all instructions, partly due to the high bandwidth on the local network, but mostly thanks to the very low latency, which reduces the time needed to establish an SSH connection. While the \verb|m3.medium| clearly lags behind given its low bandwidth, the three high-CPU \verb|c3| instances exhibit close performance and are faster than the high-throughput \verb|m1.xlarge| instance, indicating that bandwidth only has diminishing returns and the CPU is more important, while latency remains a constant factor.
-
 \section{OpenMOLE Workflow Benchmarks}
 
 On the OpenMOLE level, we are interested in how the application behaves as a whole when distributing real algorithms over a cloud cluster. In this section, we look at the performance of the system when on
 
 \subsection{Pi Computation}
+
+\subsection{Random Forest}
 
 \section{Spot Clusters}
 
