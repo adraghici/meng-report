@@ -1,11 +1,21 @@
 \chapter{Conclusion}
 
-\todo[inline]{Can have big fluctuations even for on-demand instances!}
+In this report, we describe the approach taken towards adding cloud platforms to the arsenal of execution environments supported at levels of both OpenMOLE and GridScale. We discuss in detail the specifics of adding support for Amazon EC2 and present a generic design, under which new cloud providers can be added easily. We then proceed to evaluate our implementation in a real-world setting by using the new environments in various benchmarks and present the cost implications and practical considerations of operating a cluster in the cloud.
+
+We believe that we have accomplished the main goals set out for this project. We have conducted an extensive analysis on tools used to manage and leverage cloud resources, followed by the successful integration of the GridScale AWS module with OpenMOLE and the evaluation of our results. Overall, we can draw multiple insights about our current setup and cloud computing in general from the experiments we have conducted. One of them is that cloud instances can and will experience slowdowns or failures. Unless renting more expensive dedicated instances, additional care needs to be taken for dealing with bottlenecks in a cluster. 
+
+Furthermore, choosing the right environment to distribute work to is contextual. As we have seen, network performance is an important factor for workflows dominated by light short-lived jobs, since in our benchmarks local servers almost always performed better, while remote machines with vastly different specifications but same network performance fared similarly.
+
+Before embarking on the project, we had not considered some of these factors and were initially surprised that cloud environments do not translate automatically to improved performance in relation to our local clusters. However, we now have several ideas for improving the speed and resilience of our implementation, as discussed in Section \ref{FutureWorkSection}
 
 \section{Future Work} \label{FutureWorkSection}
 
-\todo[inline]{Implementing support for SGE Arrays that kind of batch jobs together for many short-lived jobs}
+Some of the ideas we have for future improvements of the project include:
 
-\todo[inline]{Cluster management so that maybe we can rerun the workflow if we initially had a mistake. Or give some time waiting for another run before turning it off}
-
-\todo[inline]{Attaching EBS volumes to avoid copying stuff remotely}
+\begin{itemize}
+	\item Adding support for multiple cloud providers, including continuing development for the GCE module that is already under development. We believe that this is the aspect that will attract the most users, since most other workflow management systems only support Amazon as the single cloud provider, if any.
+	\item Implementing support for SGE Arrays as a way of batching jobs sent for submission to SGE clusters as part of StarCluster. We already know that  workloads with a large number of short-lived jobs are common in when performing parameter explorations, so this could significantly decrease average submission times to SGE.
+	\item One of the main slowdown reasons at the start of OpenMOLE's workflow execution on clusters in the cloud is the fact that it always needs to transfer its runtime remotely since a fresh machine is provisioned on each cluster instantiation. This could potentially be avoided by creating an EBS volume containing the required packages and mounting it on every instance in the cluster. This would avoid uploading approximately 400MB of data, saving therefore significant time.
+	\item A more open ended problem is the issue of dealing with nodes in a cluster that become bottlenecks over the course of a run. Simple potential solutions include cancelling the jobs the node is currently running and giving it time to recover or even kill it in extreme cases.
+	\item An important factor for the long-term development of the project would be creating a thorough integration testing framework. Both developers and users would vastly benefit from this move, as it would strongly enforce the resilience of the application.
+\end{itemize}

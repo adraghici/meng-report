@@ -148,7 +148,7 @@ Table \ref{PiTable} summarises the results of running the algorithm 10 times wit
 \label{PiTable}
 \end{table}
 
-We can already observe large differences in execution times between runs with similar cluster configurations. For example, run 6 is over 300\% slower than run 5, given identical instance types and the same number of jobs. By inspecting the load of the system during the workflow run, we observed that the available CPU and memory often fluctuate aggressively without the instances being flooded with requests. We partially attribute this to the fact that in the end we are working with virtual instances that share the same physical machine.
+We can already observe large differences in execution times between runs with similar cluster configurations. For example, run 6 is over 300\% slower than run 5, given identical instance types and the same number of jobs. By inspecting the load of the system during the workflow run, we observed that the available CPU and memory often fluctuated aggressively without the instances being flooded with requests. We partially attribute this to the fact that in the end we are working with virtual instances that share the same physical machine.
 
 Very long runs like 7 occur occasionally when instances in the cluster are not reliable. An occasional pattern occurring in particular with spot clusters was instances rejecting to receive jobs due to insufficient disk space, although we are not storing anything specifically on the machines themselves and the working directory is always set to \verb|/home|, the volume shared on the network by StarCluster.
 
@@ -179,9 +179,11 @@ Here we can notice that, despite only having 337 generated jobs to execute, the 
 
 \section{Spot Clusters}
 
-Throughout this section, we have learned that clusters consisting entirely of spot instances are not always reliable. Although we can potentially deal with instances being revoked, this has only happened once during the whole development process and OpenMOLE already has mechanisms to protect from sudden job failures and non-critical instances failing.
+Throughout this section, we have learned that clusters consisting entirely of spot instances are not always reliable. Although we can deal with instances being revoked by EC2 via OpenMOLE's resubmission mechanisms, this has only been necessary once  during the whole development and testing process. 
 
-However, we do not recommend ever letting the master node of a cluster be a spot instance, the biggest concern being in fact the potential flakiness on spots. Theoretically, spots are advertised as being the same as on-demand instances, but in practice we have found them to be more unreliable.
+Spot prices do not usually change abruptly, so instances being suddenly revoked is not a very common problem. Additionally OpenMOLE can already recover from sudden job failures and non-critical instances failing.
+
+However, we do not recommend ever letting the master node of a cluster be a spot instance, since it being revoked would result into an irrecuperable state for OpenMOLE. Apart from the possibility of it being revoked, the biggest concern is in fact the potential flakiness of spot instances. Theoretically, spots are advertised as being the same as on-demand instances, but in practice we have found them to be more unreliable.
 
 Despite all the potential issues with spot instances, we do recognize that they offer great value and workflows run on spot clusters are, as seen in Table \ref{PiTable}, on average between 5 and 8 times cheaper than on-demand clusters. This is particularly true if generating many short-lived jobs whose recovery in case of failure is cheap.
 
@@ -197,4 +199,4 @@ A challenge adjacent to the first point we made was the lack of integration test
 
 One of the reasons for which the experiment results may be seriously skewed is the volatility of Amazon's EC2 resource pool. Especially in the case of spot instances, which we have used almost exclusively for experiments, differences in performance can become a rather serious problem when trying to diagnose issues with the application.
 
-Our comparison with job submission systems supported by the Department of Computing may also suffer from inaccuracies. In fact, this is a more general problem, since comparing systems relying on different resource pools will always cause slight differences. One concrete example is the comparison between workflows run on an EC2 cluster and on DoC's Slurm or HTCondor deployment. The average machine in the department is the rough equivalent of the \verb|c3.4xlarge|, the second most powerful machine we rented for testing purposes. The network speed of the local connection also generally skews results against the cloud approach, although we always accounted for it when trying to explain performance differences.0
+Our comparison with job submission systems supported by the Department of Computing may also suffer from inaccuracies. In fact, this is a more general problem, since comparing systems relying on different resource pools will always cause slight differences. One concrete example is the comparison between workflows run on an EC2 cluster and on DoC's Slurm or HTCondor deployment. The average machine in the department is the rough equivalent of the \verb|c3.4xlarge|, the second most powerful machine we rented for testing purposes. The network speed of the local connection also generally skews results against the cloud approach, although we always accounted for it when trying to explain performance differences.

@@ -106,13 +106,13 @@ In order to start the coordinator node, Jclouds needs to authenticate the user. 
 
 Apart from using the IAM credentials to make EC2 API calls, we are also opening SSH channels to deliver commands to the coordinator. To do this we need to register the SSH key we are using to initiate the connection to the coordinator on AWS. This is achieved by importing the public key on AWS and giving it a name. The \verb|awsKeypairName| associated with the private key is then always mentioned when openning an SSH connection.
 
-Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provisionned for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it.
+Although it might seem that introducing a proxy node for passing StarCluster commands is inefficient, the actual overhead is minimal. The reason for the limited impact is that StarCluster is only explicitly invoked during the initialisation and destruction of the cluster. All job scheduling interactions with the job submission controller bypass the coordinator, since the job service can obtain the address of the master node and send it jobs directly. The coordinator does indeed incur a cost for being provisioned for as long as the cluster runs, but this is insignificant since we only need one of the cheapest instance types to run it.
 
 \vspace{3mm}
 \textbf{StarCluster Configuration}
 \vspace{1mm}
 
-StarCluster relies on a configuration file instead of command line parameters to specify the characteristics of clusters it is creating. The file must be located on the machine where StarCluster is being run, so we need to ensure that it is present on the coordinator node. Since the configuration parameters depend on the preferences of the user, the file can not be statically embedded in the AMI that the coordinator is constructed from and needs to be generated dynamically. Listing \ref{StarClusterConfig} shows an example StarCluster configuration file constructed on-the-fly.
+StarCluster relies on a configuration file instead of command line parameters to specify the characteristics of clusters it is creating. The file must be located on the machine where StarCluster is being run, so we need to ensure that it is present on the coordinator node. Since the configuration parameters depend on the preferences of the user, the file cannot be statically embedded in the AMI that the coordinator is constructed from and needs to be generated dynamically. Listing \ref{StarClusterConfig} shows an example StarCluster configuration file constructed on-the-fly.
 
 \begin{listing}[h]
 	\centering
@@ -174,7 +174,7 @@ StarCluster deploys SGE as its scheduler and, as discussed in Section \ref{Desig
 \textbf{Cluster Lifecycle}
 \vspace{1mm}
 
-The coordinator node and the cluster are tightly coupled in our design because the cluster can not be altered without the coordinator, which, in turn, is not relevant on its own. Therefore it makes sense for the lifecycle of the two components to be managed together, so the \verb|close| method of \verb|AWSJobService| shuts down the cluster, destroys the orchestrator and kills Jclouds communication channels to AWS.
+The coordinator node and the cluster are tightly coupled in our design because the cluster cannot be altered without the coordinator, which, in turn, is not relevant on its own. Therefore it makes sense for the lifecycle of the two components to be managed together, so the \verb|close| method of \verb|AWSJobService| shuts down the cluster, destroys the orchestrator and kills Jclouds communication channels to AWS.
 
 Even though \verb|start| and \verb|close| could have been implicitly called respectively when an instance of the job service is created and when all jobs are finished, keeping them in the public API allows the user of a library more flexibility towards reusing the service for more sessions without having to repeatedly wait for the initialization steps.
 
@@ -284,7 +284,7 @@ Additionally, most of the behaviour and structure of the AWS GridScale module an
 	\item The coordinator node is already created using Jclouds, so it can be deployed to many commercial clouds.
 	\item All the mechanisms for transferring the OpenMOLE runtime remotely, packaging jobs and configuring SSH connections to nodes in the cluster only require access to a shell, so they do not depend on where resources are provisioned from.
 	\item The job submission controller can delegate responsibility for translating and monitoring jobs to existing implementations such as the \verb|SGEJobService|, the \verb|SLURMJobService| or others based on the requirements of the underlying cluster.
-	\item OpenMOLE cloud environments are virtually identical, since resource access in encapsulated in the GridScale modules with matching interfaces. Once multiple providers are supported, we only need a single cloud environment that instantiates different job services.
+	\item OpenMOLE cloud environments are virtually identical, since resource access is encapsulated in the GridScale modules with matching interfaces. Once multiple providers are supported, we only need a single cloud environment that instantiates different job services.
 \end{itemize}
 
 \vspace{-1mm}
@@ -339,6 +339,6 @@ ssh_to = frontend
 
 After the cluster is created, the job submission workload can be forwarded to a \verb|SLURMJobService|. A caveat is that Elasticluster does not provide a built-in way of expanding or shrinking the cluster depending on the load, but this can be implemented using the existing calls for adding and removing individual nodes.
 
-One advantage of running clusters on GCE is that instance initialisation times tend to be lower compared to AWS, resulting in a faster startup of the the whole system. GCE does not have spot instances that vary in renting costs depending on demand. Instead, it introduces the concept of preemptible instances \cite{Preemptible}, which are even 70\% cheaper than normal ones can be interrupted under specific conditions.
+One advantage of running clusters on GCE is that instance initialisation times tend to be lower compared to AWS, resulting in a faster startup of the whole system. GCE does not have spot instances that vary in renting costs depending on demand. Instead, it introduces the concept of preemptible instances \cite{Preemptible}, which are even 70\% cheaper than normal ones but can be interrupted under specific conditions.
 
 A \verb|GCEEnvironment| in OpenMOLE would wrap the job service and is not even necessary in the case of factoring out a generic \verb|CloudEnvinronment| that receives the required job service as a parameter. However, the resource mapping feature needs to be overriden in order to account for Google-specific instance types and prices.

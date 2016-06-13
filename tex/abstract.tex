@@ -1,4 +1,4 @@
-\thispagestyle{empty}
+i\thispagestyle{empty}
 
 \begin{center}
 \vspace*{4cm}
@@ -7,11 +7,11 @@
 
 \vspace*{0.3cm}
 \begin{spacing}{1.0}
-Relentless technological advancements over the years have brought simulation and data processing to the core of science. This shift towards increasingly computationally intensive research matches the on-demand paradigm of cloud computing. Despite clouds offering virtually infinite pools of resources and abstractions ideal for running large-scale experiments, many scientists lack the time or expertise required to operate them efficiently. Existing tools mediating the access to cloud environments are too specific to certain communities and require extensive configuration on behalf of the user. 
+Relentless technological advancements over the years have brought simulation and data processing to the core of science. The shift towards increasingly computationally intensive research matches the on-demand paradigm of cloud computing, but despite clouds offering virtually infinite pools of resources and abstractions ideal for running large-scale experiments, many scientists lack the time or expertise required to utilize them efficiently. Existing tools mediating the access to cloud environments are too specific to certain communities and require extensive configuration on behalf of the user. 
 
-In this project, we expand OpenMOLE, a scientific framework for remote execution of user-defined workflows, to support cloud environments under a generic design. We also provide an implementation for the concrete case of Amazon's commercial cloud and discuss support for other providers. The main novelty of the extension is the full automation of the resource provisioning, deployment and lifecycle management for the cluster of virtual instances running user tasks. Additionally, we introduce automatic bidding for low-price cluster nodes and translations from cumulative resource specifications to sets of virtual machines.
+In this project, we expand OpenMOLE, a scientific framework for remote execution of user-defined workflows, to support cloud environments under a generic design. We provide an fully operational implementation for Amazon EC2 and basic support for Google Compute Engine. The main novelty of the extension is the full automation of the resource provisioning, deployment and lifecycle management for the cluster of virtual instances running user tasks. Additionally, we introduce automatic bidding for low-price cluster nodes and translations from cumulative resource specifications to sets of virtual machines.
 
-During evaluation, we benchmark response times to job events in the cluster, estimate costs of distributing data pipelines to the cloud and suggest ideas for minimising resource consumption. From a qualitative point of view, we demonstrate how execution environments are interchangeable and how cloud environments can be employed with zero user configuration.
+During evaluation, we benchmark response times to job events in the cluster, estimate costs of distributing data pipelines to the cloud and suggest ideas for optimising resource consumption. From a qualitative point of view, we demonstrate how execution environments are interchangeable and how cloud environments can be employed with zero user configuration.
 \end{spacing}
 
 \newpage
